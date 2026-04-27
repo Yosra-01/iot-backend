@@ -30,14 +30,14 @@ public class AuthService implements UserDetailsService{
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         User user = userRepository.findByEmailIgnoreCase(username);
         if (user == null)
-            throw new UsernameNotFoundException("User not found");
+            throw new UsernameNotFoundException("User not found.");
         return new UserDetailsImpl(user);
     }
 
     public AuthResponse createUser(SignupRequest request) {
 
         if(userRepository.existsByEmailIgnoreCase(request.getEmail())) {
-            throw new DuplicateEmailException("Email already exists");
+            throw new DuplicateEmailException("Email already exists.");
         }
 
         User user = authMapper.toEntity(request);
