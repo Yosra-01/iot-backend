@@ -29,15 +29,14 @@
 
 ## Branch Strategy
 
-| Branch | Purpose |
-|---|---|
-| `main` | Stable, sprint-reviewed code only |
-| `develop` | Integration branch — all features merge here first |
-| `feature/auth-signup` | User Story 1 |
-| `feature/auth-signin` | User Story 2 |
-| `feature/user-profile` | User Story 3 |
+| Branch | Purpose                                            |
+|---|----------------------------------------------------|
+| `main` | Stable, sprint-reviewed code only                  |
+| `dev` | Integration branch — all features merge here first |
+| `feature/auth` | User Story 1 & 2                                   |
+| `feature/user-profile` | User Story 3                                       |
 
-Feature branches are opened off `develop` and merged back via Pull Request after unit tests pass and the backend tester signs off. `develop` is merged into `main` at end of sprint only.
+Feature branches are opened off `dev` and merged back via Pull Request after unit tests pass and the backend tester signs off. `dev` is merged into `main` at end of sprint only.
 
 ## Prerequisites
 
