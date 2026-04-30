@@ -6,11 +6,13 @@ import com.dxc.iotmonitor.auth.dto.AuthResponse;
 import com.dxc.iotmonitor.auth.mapper.AuthMapper;
 import com.dxc.iotmonitor.exception.DuplicateEmailException;
 import com.dxc.iotmonitor.exception.InvalidCredentialsException;
+import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.security.JwtUtil;
 import com.dxc.iotmonitor.security.UserDetailsImpl;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.BadRequestException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -69,4 +71,6 @@ public class AuthService implements UserDetailsService{
 
         return response;
     }
+
+
 }
