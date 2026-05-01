@@ -25,16 +25,16 @@
 | Validation | Request field validation |
 | Spring Boot DevTools | Live reload during development |
 | jjwt-api / jjwt-impl / jjwt-jackson 0.12.6 | JWT token generation and validation |
-
+| Bucket4j 8.10.1 | Token bucket rate limiting |
 
 ## Branch Strategy
 
-| Branch | Purpose                                            |
-|---|----------------------------------------------------|
-| `main` | Stable, sprint-reviewed code only                  |
+| Branch | Purpose |
+|---|---|
+| `main` | Stable, sprint-reviewed code only |
 | `dev` | Integration branch — all features merge here first |
-| `feature/auth` | User Story 1 & 2                                   |
-| `feature/user-profile` | User Story 3                                       |
+| `feature/auth` | User Story 1 & 2 |
+| `feature/user-profile` | User Story 3 |
 
 Feature branches are opened off `dev` and merged back via Pull Request after unit tests pass and the backend tester signs off. `dev` is merged into `main` at end of sprint only.
 
@@ -85,8 +85,7 @@ jwt.secret=your_jwt_secret_minimum_32_characters
 jwt.expiration=86400000
 ```
 
-> **Note:** `jwt.secret` must be at least 32 characters long. You can generate one:
-> **Go to [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) and copy the output.**
+> **Note:** `jwt.secret` must be at least 32 characters long. You can generate one at [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) and copy the output.
 
 ### 4. Build the project
 
@@ -105,7 +104,9 @@ The application will start on `http://localhost:8080`.
 ### 6. Verify the application is running
 
 You should see the following in the console:
+```
 Started IotmonitorApplication in X seconds
+```
 
 ## Running Tests
 
@@ -113,7 +114,54 @@ Started IotmonitorApplication in X seconds
 mvn test
 ```
 
-All 6 unit tests in `AuthServiceTest` should pass.
+### Test Coverage
+
+| Test Class | Tests | Coverage |
+|---|---|---|
+| `AuthServiceTest` | 5 | Auth service — register and login logic |
+| `RateLimitServiceTest` | 6 | Rate limiting — bucket behavior and thresholds |
+| `UserServiceTest` | 6 | User service — profile, password, and delete logic |
+
+All unit tests should pass. No Spring context is loaded — tests run fast and in isolation.
+
+## Security
+
+### Authentication
+
+All protected endpoints require a valid JWT token in the `Authorization` header:
+
+```
+Authorization: Bearer <token>
+```
+
+Tokens are issued on registration and login. Expired, missing, or tampered tokens return `401 Unauthorized`.
+
+### Rate Limiting
+
+Applied to auth endpoints at the **filter level** — before request validation runs. Keyed by client IP address.
+
+| Endpoint | Limit |
+|---|---|
+| `POST /api/auth/register` | 10 requests per minute per IP |
+| `POST /api/auth/login` | 10 requests per minute per IP |
+
+Applied to profile endpoints at the **controller level** — after authentication. Keyed by authenticated user email, shared across all three profile endpoints.
+
+| Endpoints                                                                                   | Limit |
+|---------------------------------------------------------------------------------------------|---|
+| `GET /api/user/profile`<br/>`PATCH /api/user/profile/picture`<br/>`PATCH /api/user/profile/password` | 10 requests per minute per user |
+
+Exceeding the limit on any endpoint returns `429 Too Many Requests`.
+
+### Passwords
+
+Stored using BCrypt hashing. Plain text passwords are never persisted.
+
+## Testing Utilities
+
+### `DELETE /api/user/delete`
+
+This endpoint is intentionally unauthenticated. It exists solely to allow the backend tester to clean up users created during test runs without needing a JWT token. It is declared in `permitAll()` in `SecurityConfig` and is not part of the application feature set. It would be removed or secured before any production deployment.
 
 ## Sprint 1 Scope
 
@@ -122,4 +170,3 @@ All 6 unit tests in `AuthServiceTest` should pass.
 | User Story 1 — Sign Up | User provides email, first name, last name, profile picture, and password. All fields mandatory. New user record created in DB on success. |
 | User Story 2 — Sign In | User provides email and password. Returns JWT on success. Appropriate error returned on invalid credentials. |
 | User Story 3 — Profile Page | Authenticated user can view and update their profile. Supports changing profile picture and password. |
-
