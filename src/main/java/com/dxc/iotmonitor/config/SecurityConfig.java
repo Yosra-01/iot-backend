@@ -1,5 +1,6 @@
 package com.dxc.iotmonitor.config;
 
+import com.dxc.iotmonitor.security.CustomAuthenticationEntryPoint;
 import com.dxc.iotmonitor.security.JwtAuthenticationFilter;
 import com.dxc.iotmonitor.security.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitFilter rateLimitFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -37,8 +39,9 @@ public class SecurityConfig {
                         .anyRequest().authenticated() // everything else requires a valid JWT
                 )
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        // adds rate limit filter, JWT filter before Spring's default username/password filter
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class) // adds rate limit filter, JWT filter before Spring's default username/password filter
+                .exceptionHandling(ex -> ex.authenticationEntryPoint(customAuthenticationEntryPoint));
+
 
         return http.build();
     }
@@ -49,10 +52,4 @@ public class SecurityConfig {
         return config.getAuthenticationManager(); // exposes Spring's AuthenticationManager as a bean -> to trigger Spring Security's authentication process during login.
     }
 
-    //@Bean
-    //public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter filter) {
-      //  FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>(filter);
-        //registration.setEnabled(false);
-        //return registration;
-    //} //ignore automatic registration of this filter -> to return 429 instead of 403
 }

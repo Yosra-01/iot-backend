@@ -40,17 +40,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         //removing the "Bearer " prefix
         String token = authHeader.substring(7);
 
-        // extracts the email from the token
-        String email = jwtUtil.extractEmail(token);
+        if(jwtUtil.isTokenValid(token)){
+            // extracts the email from the token
+            String email = jwtUtil.extractEmail(token);
+            // only proceed if email was extracted and the user is not already authenticated -> prevents processing the token twice
+            if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-        // only proceed if email was extracted and the user is not already authenticated -> prevents processing the token twice
-        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-            // loads the user details from the database using the email
-            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
-
-            // validates the token against the loaded user
-            if (jwtUtil.isTokenValid(token)) {
+                // loads the user details from the database using the email
+                UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
                 // creates an authentication token with the user's details and authorities
                 UsernamePasswordAuthenticationToken authToken =
@@ -67,6 +64,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }
+
+
 
         // passes the request to the next filter in the chain
         filterChain.doFilter(request, response);
