@@ -15,7 +15,7 @@ public class UserService {
     public void deleteUserByEmail(String email) {
         User user = userRepository.findByEmailIgnoreCase(email);
         if (user == null){
-            throw new ResourceNotFoundException("User not found with email: " + email);
+            throw new ResourceNotFoundException("User not found");
         }
         userRepository.delete(user);
     }

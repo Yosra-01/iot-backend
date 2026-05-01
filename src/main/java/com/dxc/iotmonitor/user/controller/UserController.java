@@ -21,6 +21,6 @@ public class UserController {
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteUserByEmail(@RequestParam String email) {
         userService.deleteUserByEmail(email);
-        return ResponseEntity.ok(Map.of("message", "User deleted successfully."));  //fix this with a dto
+        return ResponseEntity.ok(Map.of("message", "User deleted successfully."));
     }
 }
