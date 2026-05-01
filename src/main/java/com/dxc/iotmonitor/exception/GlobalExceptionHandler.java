@@ -47,6 +47,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.NOT_FOUND);
     }
 
+    //429 Too Many Requests
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyRequestsException(TooManyRequestsException e){
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.TOO_MANY_REQUESTS.value(),
+                "Too Many Requests",
+                e.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.TOO_MANY_REQUESTS);
+    }
+
     //400 Bad Request
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException e) {
@@ -63,6 +74,8 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
+
+
 
     //500 Internal Error
     @ExceptionHandler(Exception.class)
