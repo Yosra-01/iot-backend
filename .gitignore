@@ -33,7 +33,7 @@ build/
 .vscode/
 
 ### Secrets ###
-.env
+application-dev.properties
 
 ### OS ###
 .DS_Store
