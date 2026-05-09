@@ -35,7 +35,7 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // no sessions —> JWT handles auth state
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/user/delete").permitAll() // public endpoints (delete for automated testing script)
+                        .requestMatchers("/api/auth/register", "/api/auth/login", "/api/user/delete", "/api/sensors/**", "/api/sensors/generate", "/api/sensors/flush", "/api/settings/**", "/api/alerts/**").permitAll() // public endpoints (delete for automated testing script)
                         .anyRequest().authenticated() // everything else requires a valid JWT
                 )
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
