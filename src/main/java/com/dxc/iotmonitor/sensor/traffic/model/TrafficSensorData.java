@@ -3,11 +3,14 @@ package com.dxc.iotmonitor.sensor.traffic.model;
 import com.dxc.iotmonitor.enums.CongestionLevel;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Check;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "traffic_sensors_data")
+@Check(constraints = "traffic_density >= 0 AND traffic_density <= 500")
+@Check(constraints = "avg_speed >= 0 AND avg_speed <= 120")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,7 +23,7 @@ public class TrafficSensorData {
     @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String location;
 
     @Column(nullable = false)
