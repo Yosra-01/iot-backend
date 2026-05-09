@@ -8,6 +8,7 @@ import com.dxc.iotmonitor.exception.DuplicateEmailException;
 import com.dxc.iotmonitor.exception.InvalidCredentialsException;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.security.JwtUtil;
+import com.dxc.iotmonitor.security.TokenBlacklistService;
 import com.dxc.iotmonitor.security.UserDetailsImpl;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
@@ -27,6 +28,7 @@ public class AuthService implements UserDetailsService{
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -72,5 +74,8 @@ public class AuthService implements UserDetailsService{
         return response;
     }
 
+    public void logout(String token) {
+        tokenBlacklistService.blacklist(token);
+    }
 
 }
