@@ -59,7 +59,7 @@ public class TrafficSensorService {
     }
 
     public List<TrafficSensorResponse> getAll() {
-        List<TrafficSensorData> entities = trafficSensorRepository.findAll();
+        List<TrafficSensorData> entities = trafficSensorRepository.findAllByOrderByTimestampDesc();
         return entities.stream()
                 .map(trafficSensorMapper::toResponse)
                 .toList();

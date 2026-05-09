@@ -2,34 +2,36 @@ package com.dxc.iotmonitor.sensor.traffic.dto;
 
 import com.dxc.iotmonitor.enums.CongestionLevel;
 import jakarta.validation.constraints.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class TrafficSensorRequest {
 
-    @NotBlank
+    @NotBlank(message = "location is required")
     private String location;
 
-    @NotNull
-    @PastOrPresent
+    @NotNull(message = "timestamp is required")
+    @PastOrPresent(message = "timestamp must not be in the future")
     private LocalDateTime timestamp;
 
-    @NotNull
-    @Min(0)
-    @Max(500)
+    @NotNull(message = "trafficDensity is required")
+    @Min(value = 0, message = "trafficDensity must be between 0 and 500")
+    @Max(value = 500, message = "trafficDensity must be between 0 and 500")
     private Integer trafficDensity;
 
-    @NotNull
-    @DecimalMin("0.0")
-    @DecimalMax("120.0")
+    @NotNull(message = "avgSpeed is required")
+    @DecimalMin(value = "0.0", message = "avgSpeed must be between 0 and 120")
+    @DecimalMax(value = "120.0", message = "avgSpeed must be between 0 and 120")
     private Float avgSpeed;
 
-    @NotNull
+    @NotNull(message = "congestionLevel is required")
     private CongestionLevel congestionLevel;
 }

@@ -78,7 +78,7 @@ class TrafficSensorServiceTest {
                 .id(UUID.randomUUID())
                 .build();
 
-        when(trafficSensorRepository.findAll()).thenReturn(List.of(entity));
+        when(trafficSensorRepository.findAllByOrderByTimestampDesc()).thenReturn(List.of(entity));
         when(trafficSensorMapper.toResponse(any(TrafficSensorData.class))).thenReturn(responseDto);
 
         List<TrafficSensorResponse> result = trafficSensorService.getAll();
