@@ -22,32 +22,37 @@ public class StreetLightSensorService {
     public StreetLightSensorResponse save(StreetLightSensorRequest request) {
         if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
-            log.warn("[StreetLightSensorService][save] Validation failed: {}", message);
+            log.warn("[StreetLightSensorService][save] validation failed: {}", message);
+            throw new IllegalArgumentException(message);
+        }
+        if (request.getLocation().length() > 255) {
+            String message = "location must not exceed 255 characters";
+            log.warn("[StreetLightSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
         if (request.getTimestamp() == null) {
             String message = "timestamp is required";
-            log.warn("[StreetLightSensorService][save] Validation failed: {}", message);
+            log.warn("[StreetLightSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
         if (request.getTimestamp().isAfter(LocalDateTime.now())) {
             String message = "timestamp must not be in the future";
-            log.warn("[StreetLightSensorService][save] Validation failed: {}", message);
+            log.warn("[StreetLightSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
         if (request.getBrightnessLevel() == null || request.getBrightnessLevel() < 0 || request.getBrightnessLevel() > 100) {
             String message = "brightnessLevel must be between 0 and 100";
-            log.warn("[StreetLightSensorService][save] Validation failed: {}", message);
+            log.warn("[StreetLightSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
         if (request.getPowerConsumption() == null || request.getPowerConsumption() < 0 || request.getPowerConsumption() > 5000) {
             String message = "powerConsumption must be between 0 and 5000";
-            log.warn("[StreetLightSensorService][save] Validation failed: {}", message);
+            log.warn("[StreetLightSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
         if (request.getStatus() == null) {
             String message = "status is required";
-            log.warn("[StreetLightSensorService][save] Validation failed: {}", message);
+            log.warn("[StreetLightSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
 
@@ -62,17 +67,18 @@ public class StreetLightSensorService {
     }
 
     public List<StreetLightSensorResponse> getAll() {
-        log.info("[StreetLightSensorService][getAll] fetching all street light sensor data");
+        log.info("[StreetLightSensorService][getAll] fetch started: scope=all");
         List<StreetLightSensorData> entities = streetLightSensorRepository.findAllByOrderByTimestampDesc();
-        log.info("[StreetLightSensorService][getAll] found {} street light sensor data", entities.size());
-        return entities.stream()
+        List<StreetLightSensorResponse> responses = entities.stream()
                 .map(streetLightSensorMapper::toResponse)
                 .toList();
+        log.info("[StreetLightSensorService][getAll] fetch completed: count={}", responses.size());
+        return responses;
     }
-    
+
     public void flush() {
-        log.info("[StreetLightSensorService][flush] flushing all street light sensor data");
+        log.info("[StreetLightSensorService][flush] flush started: scope=all");
         streetLightSensorRepository.deleteAll();
-        log.info("[StreetLightSensorService][flush] Street light sensor table flushed successfully");
+        log.info("[StreetLightSensorService][flush] flush completed: ok");
     }
 }

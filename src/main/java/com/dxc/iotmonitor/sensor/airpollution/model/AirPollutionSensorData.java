@@ -4,15 +4,24 @@ import com.dxc.iotmonitor.enums.PollutionLevel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.Check;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "air_pollution_sensor_data")
-@Data
+@Check(constraints = "pm2_5 >= 0 AND pm2_5 <= 500")
+@Check(constraints = "pm10 >= 0 AND pm10 <= 600")
+@Check(constraints = "co >= 0 AND co <= 50")
+@Check(constraints = "no2 >= 0 AND no2 <= 200")
+@Check(constraints = "so2 >= 0 AND so2 <= 350")
+@Check(constraints = "ozone >= 0 AND ozone <= 300")
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -23,7 +32,7 @@ public class AirPollutionSensorData {
     @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String location;
 
     @Column(nullable = false)

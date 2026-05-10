@@ -30,10 +30,10 @@ public class TrafficSensorData {
     private LocalDateTime timestamp;
 
     @Column(nullable = false)
-    private int trafficDensity;
+    private Integer trafficDensity;
 
     @Column(nullable = false)
-    private float avgSpeed;
+    private Float avgSpeed;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

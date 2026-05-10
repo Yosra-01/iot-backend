@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 public class TrafficSensorRequest {
 
     @NotBlank(message = "location is required")
+    @Size(max = 255, message = "location must not exceed 255 characters")
     private String location;
 
     @NotNull(message = "timestamp is required")

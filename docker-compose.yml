@@ -1,0 +1,48 @@
+# Local stack: MySQL 8 + IoT backend (profile=docker).
+# From this directory: docker compose up --build
+# API: http://localhost:8080  |  Trigger generation: curl -X POST http://localhost:8080/api/sensors/generate
+# Not for production — default passwords and JWT are for dev only.
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: iotmonitor_root_dev
+      MYSQL_DATABASE: iotmonitor
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "127.0.0.1",
+          "-uroot",
+          "-piotmonitor_root_dev",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/iotmonitor?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: iotmonitor_root_dev
+      JWT_SECRET: docker-dev-change-me-minimum-32-characters-long!!
+      # Scheduler posts to itself inside this container:
+      IOT_SIMULATION_BASE_URL: http://localhost:8080
+      
+      TZ: Africa/Cairo
+    depends_on:
+      mysql:
+        condition: service_healthy

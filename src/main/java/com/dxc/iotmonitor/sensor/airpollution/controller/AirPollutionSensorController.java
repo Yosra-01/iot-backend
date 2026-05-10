@@ -18,7 +18,7 @@ import java.util.List;
 
 @RequiredArgsConstructor
 @RestController
-@RequestMapping("/api/sensors/airpollution")
+@RequestMapping("/api/sensors/air-pollution")
 public class AirPollutionSensorController {
 
     private final AirPollutionSensorService airPollutionSensorService;
