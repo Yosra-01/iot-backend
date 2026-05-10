@@ -7,13 +7,18 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 @RequiredArgsConstructor
-@RequestMapping("/api/sensors/airpollution")
 @RestController
+@RequestMapping("/api/sensors/airpollution")
 public class AirPollutionSensorController {
 
     private final AirPollutionSensorService airPollutionSensorService;
@@ -31,6 +36,6 @@ public class AirPollutionSensorController {
     @DeleteMapping("/flush")
     public ResponseEntity<String> flush() {
         airPollutionSensorService.flush();
-        return ResponseEntity.ok("Air pollution table flushed successfully");
+        return ResponseEntity.ok("Air pollution sensor data flushed successfully.");
     }
 }

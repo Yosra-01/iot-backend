@@ -54,19 +54,28 @@ public class TrafficSensorService {
 
         TrafficSensorData entity = trafficSensorMapper.toEntity(request);
         TrafficSensorData savedEntity = trafficSensorRepository.save(entity);
-        log.info("Traffic sensor data saved successfully for location: {}", request.getLocation());
+        log.info("[TrafficSensorService][save] Traffic sensor data saved successfully for location: {}", request.getLocation());
         return trafficSensorMapper.toResponse(savedEntity);
     }
 
     public List<TrafficSensorResponse> getAll() {
+        log.info("[TrafficSensorService][getAll] fetching all traffic sensor readings");
+
         List<TrafficSensorData> entities = trafficSensorRepository.findAllByOrderByTimestampDesc();
-        return entities.stream()
+        List<TrafficSensorResponse> responses = entities.stream()
                 .map(trafficSensorMapper::toResponse)
                 .toList();
+
+        log.info("[TrafficSensorService][getAll] found {} readings", responses.size());
+
+        return responses;
     }
 
     public void flush() {
+        log.info("[TrafficSensorService][flush] flushing all traffic sensor readings");
+
         trafficSensorRepository.deleteAll();
+
         log.info("[TrafficSensorService][flush] Traffic sensor table flushed successfully");
     }
 }

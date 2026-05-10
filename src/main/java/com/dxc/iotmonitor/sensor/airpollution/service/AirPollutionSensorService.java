@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -20,23 +21,55 @@ public class AirPollutionSensorService {
     private final AirPollutionSensorMapper airPollutionSensorMapper;
 
     public AirPollutionSensorResponse save(AirPollutionSensorRequest request) {
+        if (request.getLocation() == null || request.getLocation().isBlank()) {
+            String message = "location is required";
+            log.warn("[AirPollutionSensorService][save] Validation failed: {}", message);
+            throw new IllegalArgumentException(message);
+        }
+        if (request.getTimestamp() == null) {
+            String message = "timestamp is required";
+            log.warn("[AirPollutionSensorService][save] Validation failed: {}", message);
+            throw new IllegalArgumentException(message);
+        }
+        if (request.getTimestamp().isAfter(LocalDateTime.now())) {
+            String message = "timestamp must not be in the future";
+            log.warn("[AirPollutionSensorService][save] Validation failed: {}", message);
+            throw new IllegalArgumentException(message);
+        }
         if (request.getPm2_5() == null || request.getPm2_5() < 0 || request.getPm2_5() > 500) {
-            throw new IllegalArgumentException("pm2_5 must be between 0 and 500");
+            String message = "pm2_5 must be between 0 and 500";
+            log.warn("[AirPollutionSensorService][save] Validation failed: {}", message);
+            throw new IllegalArgumentException(message);
         }
         if (request.getPm10() == null || request.getPm10() < 0 || request.getPm10() > 600) {
-            throw new IllegalArgumentException("pm10 must be between 0 and 600");
+            String message = "pm10 must be between 0 and 600";
+            log.warn("[AirPollutionSensorService][save] Validation failed: {}", message);
+            throw new IllegalArgumentException(message);
         }
         if (request.getCo() == null || request.getCo() < 0 || request.getCo() > 50) {
-            throw new IllegalArgumentException("co must be between 0 and 50");
+            String message = "co must be between 0 and 50";
+            log.warn("[AirPollutionSensorService][save] Validation failed: {}", message);
+            throw new IllegalArgumentException(message);
         }
         if (request.getNo2() == null || request.getNo2() < 0 || request.getNo2() > 200) {
-            throw new IllegalArgumentException("no2 must be between 0 and 200");
+            String message = "no2 must be between 0 and 200";
+            log.warn("[AirPollutionSensorService][save] Validation failed: {}", message);
+            throw new IllegalArgumentException(message);
         }
         if (request.getSo2() == null || request.getSo2() < 0 || request.getSo2() > 350) {
-            throw new IllegalArgumentException("so2 must be between 0 and 350");
+            String message = "so2 must be between 0 and 350";
+            log.warn("[AirPollutionSensorService][save] Validation failed: {}", message);
+            throw new IllegalArgumentException(message);
         }
         if (request.getOzone() == null || request.getOzone() < 0 || request.getOzone() > 300) {
-            throw new IllegalArgumentException("ozone must be between 0 and 300");
+            String message = "ozone must be between 0 and 300";
+            log.warn("[AirPollutionSensorService][save] Validation failed: {}", message);
+            throw new IllegalArgumentException(message);
+        }
+        if (request.getPollutionLevel() == null) {
+            String message = "pollutionLevel is required";
+            log.warn("[AirPollutionSensorService][save] Validation failed: {}", message);
+            throw new IllegalArgumentException(message);
         }
 
         log.info("[AirPollutionSensorService][save] saving air pollution reading for location: {}", request.getLocation());
@@ -67,6 +100,6 @@ public class AirPollutionSensorService {
 
         airPollutionSensorRepository.deleteAll();
 
-        log.info("[AirPollutionSensorService][flush] flushed successfully");
+        log.info("[AirPollutionSensorService][flush] flushed successfully.");
     }
 }

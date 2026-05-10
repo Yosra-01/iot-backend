@@ -30,12 +30,12 @@ public class TrafficSensorController {
 
     @GetMapping
     public ResponseEntity<List<TrafficSensorResponse>> listAll() {
-            return ResponseEntity.ok(trafficSensorService.getAll());
-    } 
+        return ResponseEntity.ok(trafficSensorService.getAll());
+    }
 
     @DeleteMapping("/flush")
-    public ResponseEntity<String> flush(){
+    public ResponseEntity<String> flush() {
         trafficSensorService.flush();
-        return ResponseEntity.ok("Traffic table flushed ");
+        return ResponseEntity.ok("Traffic sensor data flushed successfully.");
     }
 }
