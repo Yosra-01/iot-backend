@@ -1,5 +1,9 @@
 package com.dxc.iotmonitor.sensor.traffic.service;
 
+import com.dxc.iotmonitor.alert.service.AlertService;
+import com.dxc.iotmonitor.enums.Metric;
+import com.dxc.iotmonitor.enums.SensorType;
+import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorRequest;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorResponse;
 import com.dxc.iotmonitor.sensor.traffic.mapper.TrafficSensorMapper;
@@ -10,7 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
@@ -19,15 +26,11 @@ public class TrafficSensorService {
 
     private final TrafficSensorRepository trafficSensorRepository;
     private final TrafficSensorMapper trafficSensorMapper;
+    private final AlertService alertService;
 
     public TrafficSensorResponse save(TrafficSensorRequest request) {
-        if (request.getLocation() == null || request.getLocation().isBlank()) {
+        if (request.getLocation() == null) {
             String message = "location is required";
-            log.warn("[TrafficSensorService][save] validation failed: {}", message);
-            throw new IllegalArgumentException(message);
-        }
-        if (request.getLocation().length() > 255) {
-            String message = "location must not exceed 255 characters";
             log.warn("[TrafficSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
@@ -64,6 +67,11 @@ public class TrafficSensorService {
 
         log.info("[TrafficSensorService][save] saved successfully with id: {}", savedEntity.getId());
 
+        Map<Metric, Float> readings = new HashMap<>();
+        readings.put(Metric.TRAFFIC_DENSITY, (float) savedEntity.getTrafficDensity());
+        readings.put(Metric.AVG_SPEED, savedEntity.getAvgSpeed());
+        alertService.checkAndTrigger(SensorType.TRAFFIC, savedEntity.getLocation().name(), readings);
+
         return trafficSensorMapper.toResponse(savedEntity);
     }
 
@@ -78,6 +86,24 @@ public class TrafficSensorService {
         log.info("[TrafficSensorService][getAll] fetch completed: count={}", responses.size());
 
         return responses;
+    }
+
+    public TrafficSensorResponse getById(String id) {
+        log.info("[TrafficSensorService][getById] Fetching record with id: {}", id);
+        UUID uuid = UUID.fromString(id);
+        TrafficSensorData entity = trafficSensorRepository.findById(uuid)
+                .orElseThrow(() -> {
+                    log.warn("[TrafficSensorService][getById] Not found: {}", id);
+                    return new ResourceNotFoundException("Traffic sensor reading not found with id: " + id);
+                });
+        return trafficSensorMapper.toResponse(entity);
+    }
+
+    public TrafficSensorResponse getLatest() {
+        TrafficSensorData entity = trafficSensorRepository.findTopByOrderByTimestampDesc()
+                .orElseThrow(() -> new ResourceNotFoundException("No traffic sensor readings found"));
+        log.info("[TrafficSensorService][getLatest] Returning latest record");
+        return trafficSensorMapper.toResponse(entity);
     }
 
     public void flush() {

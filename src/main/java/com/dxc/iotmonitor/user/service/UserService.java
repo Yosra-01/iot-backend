@@ -11,6 +11,7 @@ import com.dxc.iotmonitor.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @RequiredArgsConstructor
 @Service
@@ -44,9 +45,11 @@ public class UserService {
 
     }
 
+    @Transactional
     public void deleteUserByEmail(String email) {
-        User user = userRepository.findByEmailIgnoreCase(email);
-        if (user == null){
+        String normalized = email == null ? null : email.trim();
+        User user = userRepository.findByEmailIgnoreCase(normalized);
+        if (user == null) {
             throw new ResourceNotFoundException("User not found");
         }
         userRepository.delete(user);

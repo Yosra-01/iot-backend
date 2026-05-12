@@ -1,5 +1,9 @@
 package com.dxc.iotmonitor.sensor.airpollution.service;
 
+import com.dxc.iotmonitor.alert.service.AlertService;
+import com.dxc.iotmonitor.enums.Metric;
+import com.dxc.iotmonitor.enums.SensorType;
+import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorRequest;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorResponse;
 import com.dxc.iotmonitor.sensor.airpollution.mapper.AirPollutionSensorMapper;
@@ -10,7 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
@@ -19,15 +26,11 @@ public class AirPollutionSensorService {
 
     private final AirPollutionSensorRepository airPollutionSensorRepository;
     private final AirPollutionSensorMapper airPollutionSensorMapper;
+    private final AlertService alertService;
 
     public AirPollutionSensorResponse save(AirPollutionSensorRequest request) {
-        if (request.getLocation() == null || request.getLocation().isBlank()) {
+        if (request.getLocation() == null) {
             String message = "location is required";
-            log.warn("[AirPollutionSensorService][save] validation failed: {}", message);
-            throw new IllegalArgumentException(message);
-        }
-        if (request.getLocation().length() > 255) {
-            String message = "location must not exceed 255 characters";
             log.warn("[AirPollutionSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
@@ -84,6 +87,11 @@ public class AirPollutionSensorService {
 
         log.info("[AirPollutionSensorService][save] saved successfully with id: {}", savedEntity.getId());
 
+        Map<Metric, Float> readings = new HashMap<>();
+        readings.put(Metric.CO, savedEntity.getCo());
+        readings.put(Metric.OZONE, savedEntity.getOzone());
+        alertService.checkAndTrigger(SensorType.AIR_POLLUTION, savedEntity.getLocation().name(), readings);
+
         return airPollutionSensorMapper.toResponse(savedEntity);
     }
 
@@ -98,6 +106,24 @@ public class AirPollutionSensorService {
         log.info("[AirPollutionSensorService][getAll] fetch completed: count={}", responses.size());
 
         return responses;
+    }
+
+    public AirPollutionSensorResponse getById(String id) {
+        log.info("[AirPollutionSensorService][getById] Fetching record with id: {}", id);
+        UUID uuid = UUID.fromString(id);
+        AirPollutionSensorData entity = airPollutionSensorRepository.findById(uuid)
+                .orElseThrow(() -> {
+                    log.warn("[AirPollutionSensorService][getById] Not found: {}", id);
+                    return new ResourceNotFoundException("Air pollution sensor reading not found with id: " + id);
+                });
+        return airPollutionSensorMapper.toResponse(entity);
+    }
+
+    public AirPollutionSensorResponse getLatest() {
+        AirPollutionSensorData entity = airPollutionSensorRepository.findTopByOrderByTimestampDesc()
+                .orElseThrow(() -> new ResourceNotFoundException("No air pollution sensor readings found"));
+        log.info("[AirPollutionSensorService][getLatest] Returning latest record");
+        return airPollutionSensorMapper.toResponse(entity);
     }
 
     public void flush() {

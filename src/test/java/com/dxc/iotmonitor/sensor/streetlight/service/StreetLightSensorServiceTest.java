@@ -1,6 +1,8 @@
 package com.dxc.iotmonitor.sensor.streetlight.service;
 
+import com.dxc.iotmonitor.alert.service.AlertService;
 import com.dxc.iotmonitor.enums.LightStatus;
+import com.dxc.iotmonitor.enums.StreetLightLocation;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorRequest;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorResponse;
 import com.dxc.iotmonitor.sensor.streetlight.mapper.StreetLightSensorMapper;
@@ -25,7 +27,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class StreetLightSensorServiceTest {
 
-    private static final String LOCATION = "Giza Bridge";
+    private static final StreetLightLocation LOCATION = StreetLightLocation.CAIRO_ZAMALEK;
     private static final int BRIGHTNESS_LEVEL = 75;
     private static final float POWER_CONSUMPTION = 1200.0f;
 
@@ -34,6 +36,9 @@ class StreetLightSensorServiceTest {
 
     @Mock
     private StreetLightSensorMapper mapper;
+
+    @Mock
+    private AlertService alertService;
 
     @InjectMocks
     private StreetLightSensorService service;

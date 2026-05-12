@@ -1,6 +1,7 @@
 package com.dxc.iotmonitor.sensor.traffic.dto;
 
 import com.dxc.iotmonitor.enums.CongestionLevel;
+import com.dxc.iotmonitor.enums.TrafficLocation;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,9 +16,8 @@ import java.time.LocalDateTime;
 @Builder
 public class TrafficSensorRequest {
 
-    @NotBlank(message = "location is required")
-    @Size(max = 255, message = "location must not exceed 255 characters")
-    private String location;
+    @NotNull(message = "location is required")
+    private TrafficLocation location;
 
     @NotNull(message = "timestamp is required")
     @PastOrPresent(message = "timestamp must not be in the future")

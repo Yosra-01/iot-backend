@@ -1,5 +1,6 @@
 package com.dxc.iotmonitor.sensor.airpollution.dto;
 
+import com.dxc.iotmonitor.enums.AirPollutionLocation;
 import com.dxc.iotmonitor.enums.PollutionLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,7 +17,7 @@ import java.util.UUID;
 public class AirPollutionSensorResponse {
 
     private UUID id;
-    private String location;
+    private AirPollutionLocation location;
     private LocalDateTime timestamp;
     private Float pm2_5;
     private Float pm10;

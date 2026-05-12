@@ -1,5 +1,6 @@
 package com.dxc.iotmonitor.sensor.airpollution.model;
 
+import com.dxc.iotmonitor.enums.AirPollutionLocation;
 import com.dxc.iotmonitor.enums.PollutionLevel;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -32,8 +33,9 @@ public class AirPollutionSensorData {
     @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(nullable = false, length = 255)
-    private String location;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AirPollutionLocation location;
 
     @Column(nullable = false)
     private LocalDateTime timestamp;

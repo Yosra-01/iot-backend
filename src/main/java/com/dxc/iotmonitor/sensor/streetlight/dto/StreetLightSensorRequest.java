@@ -1,6 +1,7 @@
 package com.dxc.iotmonitor.sensor.streetlight.dto;
 
 import com.dxc.iotmonitor.enums.LightStatus;
+import com.dxc.iotmonitor.enums.StreetLightLocation;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,9 +16,8 @@ import java.time.LocalDateTime;
 @Builder
 public class StreetLightSensorRequest {
 
-    @NotBlank(message = "location is required")
-    @Size(max = 255, message = "location must not exceed 255 characters")
-    private String location;
+    @NotNull(message = "location is required")
+    private StreetLightLocation location;
 
     @NotNull(message = "timestamp is required")
     @PastOrPresent(message = "timestamp must not be in the future")

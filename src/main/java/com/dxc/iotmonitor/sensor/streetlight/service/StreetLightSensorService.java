@@ -1,5 +1,9 @@
 package com.dxc.iotmonitor.sensor.streetlight.service;
 
+import com.dxc.iotmonitor.alert.service.AlertService;
+import com.dxc.iotmonitor.enums.Metric;
+import com.dxc.iotmonitor.enums.SensorType;
+import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorRequest;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorResponse;
 import com.dxc.iotmonitor.sensor.streetlight.mapper.StreetLightSensorMapper;
@@ -10,7 +14,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Service
@@ -18,15 +25,11 @@ import java.util.List;
 public class StreetLightSensorService {
     private final StreetLightSensorRepository streetLightSensorRepository;
     private final StreetLightSensorMapper streetLightSensorMapper;
+    private final AlertService alertService;
 
     public StreetLightSensorResponse save(StreetLightSensorRequest request) {
-        if (request.getLocation() == null || request.getLocation().isBlank()) {
+        if (request.getLocation() == null) {
             String message = "location is required";
-            log.warn("[StreetLightSensorService][save] validation failed: {}", message);
-            throw new IllegalArgumentException(message);
-        }
-        if (request.getLocation().length() > 255) {
-            String message = "location must not exceed 255 characters";
             log.warn("[StreetLightSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
@@ -63,6 +66,11 @@ public class StreetLightSensorService {
 
         log.info("[StreetLightSensorService][save] saved successfully with id: {}", savedEntity.getId());
 
+        Map<Metric, Float> readings = new HashMap<>();
+        readings.put(Metric.BRIGHTNESS_LEVEL, (float) savedEntity.getBrightnessLevel());
+        readings.put(Metric.POWER_CONSUMPTION, savedEntity.getPowerConsumption());
+        alertService.checkAndTrigger(SensorType.STREET_LIGHT, savedEntity.getLocation().name(), readings);
+
         return streetLightSensorMapper.toResponse(savedEntity);
     }
 
@@ -74,6 +82,24 @@ public class StreetLightSensorService {
                 .toList();
         log.info("[StreetLightSensorService][getAll] fetch completed: count={}", responses.size());
         return responses;
+    }
+
+    public StreetLightSensorResponse getById(String id) {
+        log.info("[StreetLightSensorService][getById] Fetching record with id: {}", id);
+        UUID uuid = UUID.fromString(id);
+        StreetLightSensorData entity = streetLightSensorRepository.findById(uuid)
+                .orElseThrow(() -> {
+                    log.warn("[StreetLightSensorService][getById] Not found: {}", id);
+                    return new ResourceNotFoundException("Street light sensor reading not found with id: " + id);
+                });
+        return streetLightSensorMapper.toResponse(entity);
+    }
+
+    public StreetLightSensorResponse getLatest() {
+        StreetLightSensorData entity = streetLightSensorRepository.findTopByOrderByTimestampDesc()
+                .orElseThrow(() -> new ResourceNotFoundException("No street light sensor readings found"));
+        log.info("[StreetLightSensorService][getLatest] Returning latest record");
+        return streetLightSensorMapper.toResponse(entity);
     }
 
     public void flush() {

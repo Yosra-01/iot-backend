@@ -1,6 +1,7 @@
 package com.dxc.iotmonitor.sensor.traffic.model;
 
 import com.dxc.iotmonitor.enums.CongestionLevel;
+import com.dxc.iotmonitor.enums.TrafficLocation;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Check;
@@ -23,8 +24,9 @@ public class TrafficSensorData {
     @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Column(nullable = false, length = 255)
-    private String location;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TrafficLocation location;
 
     @Column(nullable = false)
     private LocalDateTime timestamp;

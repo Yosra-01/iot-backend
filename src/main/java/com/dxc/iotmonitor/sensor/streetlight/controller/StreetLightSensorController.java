@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +32,16 @@ public class StreetLightSensorController {
     @GetMapping
     public ResponseEntity<List<StreetLightSensorResponse>> listAll() {
         return ResponseEntity.ok(streetLightSensorService.getAll());
+    }
+
+    @GetMapping("/latest")
+    public ResponseEntity<StreetLightSensorResponse> getLatest() {
+        return ResponseEntity.ok(streetLightSensorService.getLatest());
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<StreetLightSensorResponse> getById(@PathVariable String id) {
+        return ResponseEntity.ok(streetLightSensorService.getById(id));
     }
 
     @DeleteMapping("/flush")
