@@ -1,7 +1,6 @@
 package com.dxc.iotmonitor.sensor.traffic.dto;
 
 import com.dxc.iotmonitor.enums.CongestionLevel;
-import com.dxc.iotmonitor.enums.TrafficLocation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +16,7 @@ import java.util.UUID;
 public class TrafficSensorResponse {
 
     private UUID id;
-    private TrafficLocation location;
+    private String location;
     private LocalDateTime timestamp;
     private Integer trafficDensity;
     private Float avgSpeed;

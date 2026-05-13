@@ -1,6 +1,5 @@
 package com.dxc.iotmonitor.sensor.airpollution.dto;
 
-import com.dxc.iotmonitor.enums.AirPollutionLocation;
 import com.dxc.iotmonitor.enums.PollutionLevel;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
@@ -16,8 +15,8 @@ import java.time.LocalDateTime;
 @Builder
 public class AirPollutionSensorRequest {
 
-    @NotNull(message = "location is required")
-    private AirPollutionLocation location;
+    @NotBlank(message = "location is required")
+    private String location;
 
     @NotNull(message = "timestamp is required")
     @PastOrPresent(message = "timestamp must not be in the future")

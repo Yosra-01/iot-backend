@@ -29,7 +29,7 @@ public class AirPollutionSensorService {
     private final AlertService alertService;
 
     public AirPollutionSensorResponse save(AirPollutionSensorRequest request) {
-        if (request.getLocation() == null) {
+        if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
             log.warn("[AirPollutionSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
@@ -90,7 +90,7 @@ public class AirPollutionSensorService {
         Map<Metric, Float> readings = new HashMap<>();
         readings.put(Metric.CO, savedEntity.getCo());
         readings.put(Metric.OZONE, savedEntity.getOzone());
-        alertService.checkAndTrigger(SensorType.AIR_POLLUTION, savedEntity.getLocation().name(), readings);
+        alertService.checkAndTrigger(SensorType.AIR_POLLUTION, savedEntity.getLocation(), readings);
 
         return airPollutionSensorMapper.toResponse(savedEntity);
     }

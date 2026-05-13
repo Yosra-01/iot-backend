@@ -1,7 +1,6 @@
 package com.dxc.iotmonitor.sensor.streetlight.model;
 
 import com.dxc.iotmonitor.enums.LightStatus;
-import com.dxc.iotmonitor.enums.StreetLightLocation;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,9 +28,8 @@ public class StreetLightSensorData {
     @Column(nullable = false, updatable = false)
     private UUID id;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private StreetLightLocation location;
+    private String location;
 
     @Column(nullable = false)
     private LocalDateTime timestamp;

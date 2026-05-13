@@ -2,7 +2,6 @@ package com.dxc.iotmonitor.sensor.traffic;
 
 import com.dxc.iotmonitor.alert.service.AlertService;
 import com.dxc.iotmonitor.enums.CongestionLevel;
-import com.dxc.iotmonitor.enums.TrafficLocation;
 import com.dxc.iotmonitor.sensor.traffic.dto.*;
 import com.dxc.iotmonitor.sensor.traffic.mapper.*;
 import com.dxc.iotmonitor.sensor.traffic.model.*;
@@ -39,7 +38,7 @@ class TrafficSensorServiceTest {
     @Test
     void save_ShouldReturnResponse_WhenRequestIsValid() {
         TrafficSensorRequest request = TrafficSensorRequest.builder()
-                .location(TrafficLocation.CAIRO_RING_ROAD)
+                .location("CAIRO_RING_ROAD")
                 .timestamp(LocalDateTime.now())
                 .trafficDensity(200)
                 .avgSpeed(60.0f)
@@ -47,7 +46,7 @@ class TrafficSensorServiceTest {
                 .build();
 
         TrafficSensorData entity = TrafficSensorData.builder()
-                .location(TrafficLocation.CAIRO_RING_ROAD)
+                .location("CAIRO_RING_ROAD")
                 .timestamp(request.getTimestamp())
                 .trafficDensity(200)
                 .avgSpeed(60.0f)
@@ -72,7 +71,7 @@ class TrafficSensorServiceTest {
     @Test
     void getAll_ShouldReturnList_WhenDataExists() {
         TrafficSensorData entity = TrafficSensorData.builder()
-                .location(TrafficLocation.CAIRO_RING_ROAD)
+                .location("CAIRO_RING_ROAD")
                 .timestamp(LocalDateTime.now())
                 .trafficDensity(100)
                 .avgSpeed(50.0f)

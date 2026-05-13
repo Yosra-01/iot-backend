@@ -28,7 +28,7 @@ public class StreetLightSensorService {
     private final AlertService alertService;
 
     public StreetLightSensorResponse save(StreetLightSensorRequest request) {
-        if (request.getLocation() == null) {
+        if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
             log.warn("[StreetLightSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
@@ -69,7 +69,7 @@ public class StreetLightSensorService {
         Map<Metric, Float> readings = new HashMap<>();
         readings.put(Metric.BRIGHTNESS_LEVEL, (float) savedEntity.getBrightnessLevel());
         readings.put(Metric.POWER_CONSUMPTION, savedEntity.getPowerConsumption());
-        alertService.checkAndTrigger(SensorType.STREET_LIGHT, savedEntity.getLocation().name(), readings);
+        alertService.checkAndTrigger(SensorType.STREET_LIGHT, savedEntity.getLocation(), readings);
 
         return streetLightSensorMapper.toResponse(savedEntity);
     }

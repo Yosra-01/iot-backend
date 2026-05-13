@@ -1,7 +1,6 @@
 package com.dxc.iotmonitor.sensor.streetlight.dto;
 
 import com.dxc.iotmonitor.enums.LightStatus;
-import com.dxc.iotmonitor.enums.StreetLightLocation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +16,7 @@ import java.util.UUID;
 public class StreetLightSensorResponse {
 
     private UUID id;
-    private StreetLightLocation location;
+    private String location;
     private LocalDateTime timestamp;
     private Integer brightnessLevel;
     private Float powerConsumption;

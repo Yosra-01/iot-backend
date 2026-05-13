@@ -29,7 +29,7 @@ public class TrafficSensorService {
     private final AlertService alertService;
 
     public TrafficSensorResponse save(TrafficSensorRequest request) {
-        if (request.getLocation() == null) {
+        if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
             log.warn("[TrafficSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
@@ -70,7 +70,7 @@ public class TrafficSensorService {
         Map<Metric, Float> readings = new HashMap<>();
         readings.put(Metric.TRAFFIC_DENSITY, (float) savedEntity.getTrafficDensity());
         readings.put(Metric.AVG_SPEED, savedEntity.getAvgSpeed());
-        alertService.checkAndTrigger(SensorType.TRAFFIC, savedEntity.getLocation().name(), readings);
+        alertService.checkAndTrigger(SensorType.TRAFFIC, savedEntity.getLocation(), readings);
 
         return trafficSensorMapper.toResponse(savedEntity);
     }

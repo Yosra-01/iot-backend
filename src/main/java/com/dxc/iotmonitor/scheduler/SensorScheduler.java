@@ -1,11 +1,8 @@
 package com.dxc.iotmonitor.scheduler;
 
-import com.dxc.iotmonitor.enums.AirPollutionLocation;
 import com.dxc.iotmonitor.enums.CongestionLevel;
 import com.dxc.iotmonitor.enums.LightStatus;
 import com.dxc.iotmonitor.enums.PollutionLevel;
-import com.dxc.iotmonitor.enums.StreetLightLocation;
-import com.dxc.iotmonitor.enums.TrafficLocation;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorRequest;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorResponse;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorRequest;
@@ -28,6 +25,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @RequiredArgsConstructor
 public class SensorScheduler {
+
+    private static final String[] TRAFFIC_LOCATIONS = {
+            "CAIRO_RING_ROAD",
+            "CAIRO_OCTOBER_BRIDGE",
+            "CAIRO_SALAH_SALEM_ROAD",
+    };
+    private static final String[] AIR_POLLUTION_LOCATIONS = {
+            "CAIRO_NASR_CITY",
+            "CAIRO_MAADI",
+            "CAIRO_HELIOPOLIS",
+    };
+    private static final String[] STREET_LIGHT_LOCATIONS = {
+            "CAIRO_ZAMALEK",
+            "CAIRO_DOWNTOWN",
+            "CAIRO_NEW_CAIRO",
+    };
 
     private static final AtomicInteger trafficRunCount = new AtomicInteger(0);
     private static final AtomicInteger airPollutionRunCount = new AtomicInteger(0);
@@ -168,8 +181,7 @@ public class SensorScheduler {
 
     private TrafficSensorRequest buildTrafficRequest() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        TrafficLocation[] trafficLocations = TrafficLocation.values();
-        TrafficLocation trafficLocation = trafficLocations[rnd.nextInt(trafficLocations.length)];
+        String trafficLocation = TRAFFIC_LOCATIONS[rnd.nextInt(TRAFFIC_LOCATIONS.length)];
         return TrafficSensorRequest.builder()
                 .location(trafficLocation)
                 .timestamp(LocalDateTime.now().withNano(0))
@@ -181,8 +193,7 @@ public class SensorScheduler {
 
     private AirPollutionSensorRequest buildAirPollutionRequest() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        AirPollutionLocation[] airLocations = AirPollutionLocation.values();
-        AirPollutionLocation airLocation = airLocations[rnd.nextInt(airLocations.length)];
+        String airLocation = AIR_POLLUTION_LOCATIONS[rnd.nextInt(AIR_POLLUTION_LOCATIONS.length)];
         return AirPollutionSensorRequest.builder()
                 .location(airLocation)
                 .timestamp(LocalDateTime.now().withNano(0))
@@ -198,8 +209,7 @@ public class SensorScheduler {
 
     private StreetLightSensorRequest buildStreetLightRequest() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        StreetLightLocation[] lightLocations = StreetLightLocation.values();
-        StreetLightLocation lightLocation = lightLocations[rnd.nextInt(lightLocations.length)];
+        String lightLocation = STREET_LIGHT_LOCATIONS[rnd.nextInt(STREET_LIGHT_LOCATIONS.length)];
         return StreetLightSensorRequest.builder()
                 .location(lightLocation)
                 .timestamp(LocalDateTime.now().withNano(0))

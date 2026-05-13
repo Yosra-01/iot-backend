@@ -1,7 +1,6 @@
 package com.dxc.iotmonitor.sensor.airpollution.service;
 
 import com.dxc.iotmonitor.alert.service.AlertService;
-import com.dxc.iotmonitor.enums.AirPollutionLocation;
 import com.dxc.iotmonitor.enums.PollutionLevel;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorRequest;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorResponse;
@@ -27,7 +26,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AirPollutionSensorServiceTest {
 
-    private static final AirPollutionLocation LOCATION = AirPollutionLocation.CAIRO_NASR_CITY;
+    private static final String LOCATION = "CAIRO_NASR_CITY";
     private static final float PM2_5 = 120.5f;
     private static final float PM10 = 200.3f;
     private static final float CO = 25.1f;
