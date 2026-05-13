@@ -7,6 +7,7 @@ import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorResponse;
 import com.dxc.iotmonitor.sensor.streetlight.mapper.StreetLightSensorMapper;
 import com.dxc.iotmonitor.sensor.streetlight.model.StreetLightSensorData;
 import com.dxc.iotmonitor.sensor.streetlight.repository.StreetLightSensorRepository;
+import com.dxc.iotmonitor.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,7 +16,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,6 +41,9 @@ class StreetLightSensorServiceTest {
 
     @Mock
     private AlertService alertService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private StreetLightSensorService service;
@@ -85,8 +91,9 @@ class StreetLightSensorServiceTest {
         when(mapper.toEntity(request)).thenReturn(entity);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(response);
+        when(userRepository.findAll()).thenReturn(Collections.emptyList());
 
-        StreetLightSensorResponse result = service.save(request);
+        StreetLightSensorResponse result = service.save(request, Optional.empty());
 
         assertEquals(response, result);
         verify(repository, times(1)).save(entity);

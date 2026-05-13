@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -52,7 +53,7 @@ class UserServiceTest {
         ProfileResponse expectedResponse = new ProfileResponse();
         expectedResponse.setEmail(email);
 
-        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(user);
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
         when(userMapper.toResponse(user)).thenReturn(expectedResponse);
 
         // Act
@@ -80,7 +81,7 @@ class UserServiceTest {
         UpdateProfilePictureRequest request = new UpdateProfilePictureRequest();
         request.setProfilePicture("/9j/4AAQSkZJRgABAQ...");
 
-        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(user);
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
 
         // Act
         userService.updateProfilePicture(email, request);
@@ -107,7 +108,7 @@ class UserServiceTest {
         request.setCurrentPassword("oldPassword");
         request.setNewPassword("newPassword123!");
 
-        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(user);
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("oldPassword", "hashedOldPassword")).thenReturn(true);
         when(passwordEncoder.encode("newPassword123!")).thenReturn("hashedNewPassword");
 
@@ -132,7 +133,7 @@ class UserServiceTest {
         request.setCurrentPassword("wrongPassword");
         request.setNewPassword("newPassword123!");
 
-        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(user);
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrongPassword", "hashedOldPassword")).thenReturn(false);
 
         // Act & Assert
@@ -157,7 +158,7 @@ class UserServiceTest {
         User user = new User();
         user.setEmail(email);
 
-        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(user);
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
 
         // Act
         userService.deleteUserByEmail(email);
@@ -171,7 +172,7 @@ class UserServiceTest {
         // Arrange
         String email = "unknown@example.com";
 
-        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(null);
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
 
         // Act & Assert
         ResourceNotFoundException exception = assertThrows(

@@ -32,10 +32,10 @@ public class AuthService implements UserDetailsService{
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByEmailIgnoreCase(username);
-        if (user == null)
-            throw new UsernameNotFoundException("User not found.");
-        return new UserDetailsImpl(user);
+        return userRepository
+                .findByEmailIgnoreCase(username)
+                .map(UserDetailsImpl::new)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found."));
     }
 
     public AuthResponse createUser(SignupRequest request) {
@@ -56,11 +56,9 @@ public class AuthService implements UserDetailsService{
     }
 
     public AuthResponse login(LoginRequest request){
-        User user = userRepository.findByEmailIgnoreCase(request.getEmail());
-
-        if (user == null) {
-            throw new InvalidCredentialsException("Invalid email or password.");
-        }
+        User user = userRepository
+                .findByEmailIgnoreCase(request.getEmail())
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password."));
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid email or password.");
         }

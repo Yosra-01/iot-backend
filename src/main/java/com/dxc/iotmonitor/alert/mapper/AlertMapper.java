@@ -1,7 +1,7 @@
 package com.dxc.iotmonitor.alert.mapper;
 
+import com.dxc.iotmonitor.alert.AlertData;
 import com.dxc.iotmonitor.alert.dto.response.AlertResponse;
-import com.dxc.iotmonitor.alert.model.AlertData;
 import org.springframework.stereotype.Component;
 
 @Component

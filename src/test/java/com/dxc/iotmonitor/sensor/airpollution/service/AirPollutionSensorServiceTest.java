@@ -7,6 +7,7 @@ import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorResponse;
 import com.dxc.iotmonitor.sensor.airpollution.mapper.AirPollutionSensorMapper;
 import com.dxc.iotmonitor.sensor.airpollution.model.AirPollutionSensorData;
 import com.dxc.iotmonitor.sensor.airpollution.repository.AirPollutionSensorRepository;
+import com.dxc.iotmonitor.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,7 +16,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,6 +45,9 @@ class AirPollutionSensorServiceTest {
 
     @Mock
     private AlertService alertService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private AirPollutionSensorService service;
@@ -101,8 +107,9 @@ class AirPollutionSensorServiceTest {
         when(mapper.toEntity(request)).thenReturn(entity);
         when(repository.save(entity)).thenReturn(entity);
         when(mapper.toResponse(entity)).thenReturn(response);
+        when(userRepository.findAll()).thenReturn(Collections.emptyList());
 
-        AirPollutionSensorResponse result = service.save(request);
+        AirPollutionSensorResponse result = service.save(request, Optional.empty());
 
         assertEquals(response, result);
         verify(repository, times(1)).save(entity);

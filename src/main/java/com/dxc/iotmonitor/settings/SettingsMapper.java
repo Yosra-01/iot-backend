@@ -1,15 +1,14 @@
-package com.dxc.iotmonitor.settings.mapper;
+package com.dxc.iotmonitor.settings;
 
-import com.dxc.iotmonitor.settings.dto.ThresholdSettingRequest;
-import com.dxc.iotmonitor.settings.dto.ThresholdSettingResponse;
-import com.dxc.iotmonitor.settings.model.ThresholdSetting;
+import com.dxc.iotmonitor.settings.dto.SettingsRequest;
+import com.dxc.iotmonitor.settings.dto.SettingsResponse;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ThresholdSettingMapper {
+public class SettingsMapper {
 
-    public ThresholdSetting toEntity(ThresholdSettingRequest request) {
-        ThresholdSetting entity = new ThresholdSetting();
+    public Settings toEntity(SettingsRequest request) {
+        Settings entity = new Settings();
         entity.setType(request.getType());
         entity.setMetric(request.getMetric());
         entity.setThresholdValue(request.getThresholdValue());
@@ -17,8 +16,8 @@ public class ThresholdSettingMapper {
         return entity;
     }
 
-    public ThresholdSettingResponse toResponse(ThresholdSetting entity) {
-        ThresholdSettingResponse response = new ThresholdSettingResponse();
+    public SettingsResponse toResponse(Settings entity) {
+        SettingsResponse response = new SettingsResponse();
         response.setId(entity.getId());
         response.setType(entity.getType());
         response.setMetric(entity.getMetric());

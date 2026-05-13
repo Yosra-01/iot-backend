@@ -7,13 +7,16 @@ import com.dxc.iotmonitor.sensor.traffic.mapper.*;
 import com.dxc.iotmonitor.sensor.traffic.model.*;
 import com.dxc.iotmonitor.sensor.traffic.repository.*;
 import com.dxc.iotmonitor.sensor.traffic.service.*;
+import com.dxc.iotmonitor.user.repository.UserRepository;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.*;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -31,6 +34,9 @@ class TrafficSensorServiceTest {
 
     @Mock
     private AlertService alertService;
+
+    @Mock
+    private UserRepository userRepository;
 
     @InjectMocks
     private TrafficSensorService trafficSensorService;
@@ -61,8 +67,9 @@ class TrafficSensorServiceTest {
         when(trafficSensorMapper.toEntity(request)).thenReturn(entity);
         when(trafficSensorRepository.save(entity)).thenReturn(entity);
         when(trafficSensorMapper.toResponse(entity)).thenReturn(mappedResponse);
+        when(userRepository.findAll()).thenReturn(Collections.emptyList());
 
-        TrafficSensorResponse response = trafficSensorService.save(request);
+        TrafficSensorResponse response = trafficSensorService.save(request, Optional.empty());
 
         assertNotNull(response);
         verify(trafficSensorRepository, times(1)).save(entity);

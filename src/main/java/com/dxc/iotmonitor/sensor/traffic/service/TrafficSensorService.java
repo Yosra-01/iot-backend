@@ -9,6 +9,8 @@ import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorResponse;
 import com.dxc.iotmonitor.sensor.traffic.mapper.TrafficSensorMapper;
 import com.dxc.iotmonitor.sensor.traffic.model.TrafficSensorData;
 import com.dxc.iotmonitor.sensor.traffic.repository.TrafficSensorRepository;
+import com.dxc.iotmonitor.user.model.User;
+import com.dxc.iotmonitor.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -27,8 +30,9 @@ public class TrafficSensorService {
     private final TrafficSensorRepository trafficSensorRepository;
     private final TrafficSensorMapper trafficSensorMapper;
     private final AlertService alertService;
+    private final UserRepository userRepository;
 
-    public TrafficSensorResponse save(TrafficSensorRequest request) {
+    public TrafficSensorResponse save(TrafficSensorRequest request, Optional<User> user) {
         if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
             log.warn("[TrafficSensorService][save] validation failed: {}", message);
@@ -70,7 +74,13 @@ public class TrafficSensorService {
         Map<Metric, Float> readings = new HashMap<>();
         readings.put(Metric.TRAFFIC_DENSITY, (float) savedEntity.getTrafficDensity());
         readings.put(Metric.AVG_SPEED, savedEntity.getAvgSpeed());
-        alertService.checkAndTrigger(SensorType.TRAFFIC, savedEntity.getLocation(), readings);
+        if (user.isPresent()) {
+            alertService.checkAndTrigger(SensorType.TRAFFIC, readings, savedEntity.getLocation(), user.get());
+        } else {
+            for (User u : userRepository.findAll()) {
+                alertService.checkAndTrigger(SensorType.TRAFFIC, readings, savedEntity.getLocation(), u);
+            }
+        }
 
         return trafficSensorMapper.toResponse(savedEntity);
     }

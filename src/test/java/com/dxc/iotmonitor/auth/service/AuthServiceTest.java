@@ -7,6 +7,7 @@ import com.dxc.iotmonitor.auth.mapper.AuthMapper;
 import com.dxc.iotmonitor.exception.DuplicateEmailException;
 import com.dxc.iotmonitor.exception.InvalidCredentialsException;
 import com.dxc.iotmonitor.security.JwtUtil;
+import com.dxc.iotmonitor.security.TokenBlacklistService;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -15,6 +16,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -30,6 +33,9 @@ class AuthServiceTest {
 
     @Mock
     private JwtUtil jwtUtil;
+
+    @Mock
+    private TokenBlacklistService tokenBlacklistService;
 
     @Mock
     private AuthMapper authMapper;
@@ -104,7 +110,7 @@ class AuthServiceTest {
 
         AuthResponse expectedResponse = new AuthResponse();
 
-        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(existingUser);
+        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(request.getPassword(), existingUser.getPassword())).thenReturn(true);
         when(jwtUtil.generateToken(existingUser.getEmail())).thenReturn("mocked-jwt-token");
         when(authMapper.toResponse(existingUser)).thenReturn(expectedResponse);
@@ -123,7 +129,7 @@ class AuthServiceTest {
         // Arrange
         LoginRequest request = new LoginRequest("unknown@example.com", "securePassword123");
 
-        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(null); // user not found
+        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.empty()); // user not found
 
         // Act & Assert
         InvalidCredentialsException exception = assertThrows(
@@ -144,7 +150,7 @@ class AuthServiceTest {
         existingUser.setEmail("john.doe@example.com");
         existingUser.setPassword("hashedPassword");
 
-        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(existingUser);
+        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(request.getPassword(), existingUser.getPassword())).thenReturn(false); // wrong password
 
         // Act & Assert

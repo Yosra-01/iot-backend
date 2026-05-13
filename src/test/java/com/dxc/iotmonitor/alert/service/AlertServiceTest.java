@@ -1,15 +1,16 @@
 package com.dxc.iotmonitor.alert.service;
 
+import com.dxc.iotmonitor.alert.AlertData;
 import com.dxc.iotmonitor.alert.dto.response.AlertResponse;
 import com.dxc.iotmonitor.alert.mapper.AlertMapper;
-import com.dxc.iotmonitor.alert.model.AlertData;
 import com.dxc.iotmonitor.alert.repository.AlertRepository;
 import com.dxc.iotmonitor.enums.AlertType;
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
-import com.dxc.iotmonitor.settings.model.ThresholdSetting;
-import com.dxc.iotmonitor.settings.repository.ThresholdSettingRepository;
+import com.dxc.iotmonitor.settings.Settings;
+import com.dxc.iotmonitor.settings.SettingsRepository;
+import com.dxc.iotmonitor.user.model.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -40,10 +41,18 @@ class AlertServiceTest {
     private AlertMapper alertMapper;
 
     @Mock
-    private ThresholdSettingRepository thresholdSettingRepository;
+    private SettingsRepository settingsRepository;
 
     @InjectMocks
     private AlertService alertService;
+
+    private final User user = User.builder()
+            .userId(UUID.randomUUID())
+            .email("u@example.com")
+            .firstName("U")
+            .lastName("Ser")
+            .password("x")
+            .build();
 
     @Test
     void findAll_returnsMappedList() {
@@ -52,10 +61,10 @@ class AlertServiceTest {
         AlertResponse response = new AlertResponse();
         response.setId(alertData.getId());
 
-        when(alertRepository.findAllByOrderByTriggeredAtDesc()).thenReturn(List.of(alertData));
+        when(alertRepository.findByUserOrderByTriggeredAtDesc(user)).thenReturn(List.of(alertData));
         when(alertMapper.toResponse(alertData)).thenReturn(response);
 
-        List<AlertResponse> result = alertService.findAll();
+        List<AlertResponse> result = alertService.findAll(user);
 
         assertEquals(1, result.size());
     }
@@ -88,9 +97,9 @@ class AlertServiceTest {
 
     @Test
     void count_returnsCount() {
-        when(alertRepository.count()).thenReturn(5L);
+        when(alertRepository.countByUser(user)).thenReturn(5L);
 
-        assertEquals(5L, alertService.count());
+        assertEquals(5L, alertService.count(user));
     }
 
     @Test
@@ -119,36 +128,38 @@ class AlertServiceTest {
 
     @Test
     void checkAndTrigger_aboveBreach_savesAlert() {
-        ThresholdSetting setting = new ThresholdSetting();
+        Settings setting = new Settings();
         setting.setType(SensorType.TRAFFIC);
         setting.setMetric(Metric.TRAFFIC_DENSITY);
         setting.setAlertType(AlertType.ABOVE);
         setting.setThresholdValue(400.0f);
 
-        when(thresholdSettingRepository.findByType(SensorType.TRAFFIC)).thenReturn(List.of(setting));
+        when(settingsRepository.findByUser(user)).thenReturn(List.of(setting));
 
         alertService.checkAndTrigger(
                 SensorType.TRAFFIC,
+                Map.of(Metric.TRAFFIC_DENSITY, 480.0f),
                 "CAIRO_RING_ROAD",
-                Map.of(Metric.TRAFFIC_DENSITY, 480.0f));
+                user);
 
         verify(alertRepository, times(1)).save(any(AlertData.class));
     }
 
     @Test
     void checkAndTrigger_noBreach_doesNotSave() {
-        ThresholdSetting setting = new ThresholdSetting();
+        Settings setting = new Settings();
         setting.setType(SensorType.TRAFFIC);
         setting.setMetric(Metric.TRAFFIC_DENSITY);
         setting.setAlertType(AlertType.ABOVE);
         setting.setThresholdValue(400.0f);
 
-        when(thresholdSettingRepository.findByType(SensorType.TRAFFIC)).thenReturn(List.of(setting));
+        when(settingsRepository.findByUser(user)).thenReturn(List.of(setting));
 
         alertService.checkAndTrigger(
                 SensorType.TRAFFIC,
+                Map.of(Metric.TRAFFIC_DENSITY, 300.0f),
                 "CAIRO_RING_ROAD",
-                Map.of(Metric.TRAFFIC_DENSITY, 300.0f));
+                user);
 
         verify(alertRepository, never()).save(any(AlertData.class));
     }

@@ -1,13 +1,11 @@
-package com.dxc.iotmonitor.settings.service;
+package com.dxc.iotmonitor.settings;
 
 import com.dxc.iotmonitor.enums.AlertType;
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.SensorType;
-import com.dxc.iotmonitor.settings.dto.ThresholdSettingRequest;
-import com.dxc.iotmonitor.settings.dto.ThresholdSettingResponse;
-import com.dxc.iotmonitor.settings.mapper.ThresholdSettingMapper;
-import com.dxc.iotmonitor.settings.model.ThresholdSetting;
-import com.dxc.iotmonitor.settings.repository.ThresholdSettingRepository;
+import com.dxc.iotmonitor.settings.dto.SettingsRequest;
+import com.dxc.iotmonitor.settings.dto.SettingsResponse;
+import com.dxc.iotmonitor.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,21 +19,19 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class ThresholdSettingService {
+public class SettingsService {
 
-    private final ThresholdSettingRepository thresholdSettingRepository;
-    private final ThresholdSettingMapper thresholdSettingMapper;
+    private final SettingsRepository settingsRepository;
+    private final SettingsMapper settingsMapper;
 
-    public List<ThresholdSettingResponse> upsert(List<ThresholdSettingRequest> requests) {
-        // Step 1 — validate all requests first (no saves yet)
-        for (ThresholdSettingRequest request : requests) {
+    public List<SettingsResponse> upsert(List<SettingsRequest> requests, User user) {
+        for (SettingsRequest request : requests) {
             validateMetricForSensorType(request.getType(), request.getMetric());
             validateThresholdRange(request.getMetric(), request.getThresholdValue());
         }
 
-        // Step 2 — contradiction check from incoming map + cross-check DB (no saves yet)
         Map<TypeMetricKey, Map<AlertType, Float>> incomingByKey = new HashMap<>();
-        for (ThresholdSettingRequest request : requests) {
+        for (SettingsRequest request : requests) {
             TypeMetricKey key = new TypeMetricKey(request.getType(), request.getMetric());
             incomingByKey
                     .computeIfAbsent(key, k -> new EnumMap<>(AlertType.class))
@@ -53,63 +49,62 @@ public class ThresholdSettingService {
             }
 
             if (aboveIncoming != null) {
-                Optional<ThresholdSetting> dbBelow = thresholdSettingRepository.findByTypeAndMetricAndAlertType(
-                        key.type(), key.metric(), AlertType.BELOW);
+                Optional<Settings> dbBelow = settingsRepository.findByUserAndTypeAndMetricAndAlertType(
+                        user, key.type(), key.metric(), AlertType.BELOW);
                 if (dbBelow.isPresent() && !(dbBelow.get().getThresholdValue() < aboveIncoming)) {
                     throwContradiction(key.metric());
                 }
             }
 
             if (belowIncoming != null) {
-                Optional<ThresholdSetting> dbAbove = thresholdSettingRepository.findByTypeAndMetricAndAlertType(
-                        key.type(), key.metric(), AlertType.ABOVE);
+                Optional<Settings> dbAbove = settingsRepository.findByUserAndTypeAndMetricAndAlertType(
+                        user, key.type(), key.metric(), AlertType.ABOVE);
                 if (dbAbove.isPresent() && !(belowIncoming < dbAbove.get().getThresholdValue())) {
                     throwContradiction(key.metric());
                 }
             }
         }
 
-        // Step 3 — save all (only after validations pass)
-        for (ThresholdSettingRequest request : requests) {
-            Optional<ThresholdSetting> existing = thresholdSettingRepository.findByTypeAndMetricAndAlertType(
-                    request.getType(), request.getMetric(), request.getAlertType());
+        for (SettingsRequest request : requests) {
+            Optional<Settings> existing = settingsRepository.findByUserAndTypeAndMetricAndAlertType(
+                    user, request.getType(), request.getMetric(), request.getAlertType());
 
-            ThresholdSetting entity;
+            Settings entity;
             if (existing.isPresent()) {
                 entity = existing.get();
                 entity.setThresholdValue(request.getThresholdValue());
             } else {
-                entity = thresholdSettingMapper.toEntity(request);
+                entity = settingsMapper.toEntity(request);
+                entity.setUser(user);
             }
 
-            log.info("[ThresholdSettingService][upsert] saving {} threshold for metric: {}", request.getAlertType(), request.getMetric());
-            ThresholdSetting saved = thresholdSettingRepository.save(entity);
-            log.info("[ThresholdSettingService][upsert] saved successfully with id: {}", saved.getId());
+            log.info("[SettingsService][upsert] saving {} threshold for metric: {}", request.getAlertType(), request.getMetric());
+            Settings saved = settingsRepository.save(entity);
+            log.info("[SettingsService][upsert] saved successfully with id: {}", saved.getId());
         }
 
-        // Step 4 — return full list mapped to responses
-        return thresholdSettingRepository.findAll().stream()
-                .map(thresholdSettingMapper::toResponse)
+        return settingsRepository.findByUser(user).stream()
+                .map(settingsMapper::toResponse)
                 .toList();
     }
 
     private void throwContradiction(Metric metric) {
         String message = "Contradictory thresholds: below value must be less than above value for metric " + metric.name() + ".";
-        log.warn("[ThresholdSettingService][upsert] validation failed: {}", message);
+        log.warn("[SettingsService][upsert] validation failed: {}", message);
         throw new IllegalArgumentException(message);
     }
 
-    public List<ThresholdSettingResponse> findAll() {
-        List<ThresholdSetting> all = thresholdSettingRepository.findAll();
-        log.info("[ThresholdSettingService][findAll] returning {} settings", all.size());
+    public List<SettingsResponse> findAll(User user) {
+        List<Settings> all = settingsRepository.findByUser(user);
+        log.info("[SettingsService][findAll] returning {} settings", all.size());
         return all.stream()
-                .map(thresholdSettingMapper::toResponse)
+                .map(settingsMapper::toResponse)
                 .toList();
     }
 
     public void flush() {
-        thresholdSettingRepository.deleteAll();
-        log.info("[ThresholdSettingService][flush] all settings deleted");
+        settingsRepository.deleteAll();
+        log.info("[SettingsService][flush] all settings deleted");
     }
 
     private void validateMetricForSensorType(SensorType type, Metric metric) {
@@ -120,7 +115,7 @@ public class ThresholdSettingService {
         };
         if (!valid) {
             String message = "invalid metric for this sensor type";
-            log.warn("[ThresholdSettingService][upsert] validation failed: {}", message);
+            log.warn("[SettingsService][upsert] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
     }
@@ -128,7 +123,7 @@ public class ThresholdSettingService {
     private void validateThresholdRange(Metric metric, Float thresholdValue) {
         if (thresholdValue == null) {
             String message = "thresholdValue out of valid range for this metric";
-            log.warn("[ThresholdSettingService][upsert] validation failed: {}", message);
+            log.warn("[SettingsService][upsert] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
         float v = thresholdValue;
@@ -142,7 +137,7 @@ public class ThresholdSettingService {
         };
         if (!inRange) {
             String message = "thresholdValue out of valid range for this metric";
-            log.warn("[ThresholdSettingService][upsert] validation failed: {}", message);
+            log.warn("[SettingsService][upsert] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
     }

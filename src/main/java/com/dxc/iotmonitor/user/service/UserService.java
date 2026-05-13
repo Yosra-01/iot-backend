@@ -22,19 +22,25 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
 
     public ProfileResponse getProfile(String email){
-        User user = userRepository.findByEmailIgnoreCase(email);
+        User user = userRepository
+                .findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         ProfileResponse response = userMapper.toResponse(user);
         return response;
     }
 
     public void updateProfilePicture(String email, UpdateProfilePictureRequest request){
-        User user = userRepository.findByEmailIgnoreCase(email);
+        User user = userRepository
+                .findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         user.setProfilePicture(request.getProfilePicture());
         userRepository.save(user);
     }
 
     public void updatePassword(String email, UpdatePasswordRequest request){
-        User user = userRepository.findByEmailIgnoreCase(email);
+        User user = userRepository
+                .findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Current password is incorrect.");
@@ -48,10 +54,9 @@ public class UserService {
     @Transactional
     public void deleteUserByEmail(String email) {
         String normalized = email == null ? null : email.trim();
-        User user = userRepository.findByEmailIgnoreCase(normalized);
-        if (user == null) {
-            throw new ResourceNotFoundException("User not found");
-        }
+        User user = userRepository
+                .findByEmailIgnoreCase(normalized)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         userRepository.delete(user);
     }
 }

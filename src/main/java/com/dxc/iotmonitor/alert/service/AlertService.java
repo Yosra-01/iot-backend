@@ -1,18 +1,19 @@
 package com.dxc.iotmonitor.alert.service;
 
+import com.dxc.iotmonitor.alert.AlertData;
 import com.dxc.iotmonitor.alert.dto.response.AlertResponse;
 import com.dxc.iotmonitor.alert.mapper.AlertMapper;
-import com.dxc.iotmonitor.alert.model.AlertData;
 import com.dxc.iotmonitor.alert.repository.AlertRepository;
 import com.dxc.iotmonitor.enums.AlertType;
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.SensorType;
-import com.dxc.iotmonitor.settings.model.ThresholdSetting;
-import com.dxc.iotmonitor.settings.repository.ThresholdSettingRepository;
+import com.dxc.iotmonitor.exception.ResourceNotFoundException;
+import com.dxc.iotmonitor.settings.Settings;
+import com.dxc.iotmonitor.settings.SettingsRepository;
+import com.dxc.iotmonitor.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.Map;
@@ -25,10 +26,10 @@ public class AlertService {
 
     private final AlertRepository alertRepository;
     private final AlertMapper alertMapper;
-    private final ThresholdSettingRepository thresholdSettingRepository;
+    private final SettingsRepository settingsRepository;
 
-    public List<AlertResponse> findAll() {
-        return alertRepository.findAllByOrderByTriggeredAtDesc().stream()
+    public List<AlertResponse> findAll(User user) {
+        return alertRepository.findByUserOrderByTriggeredAtDesc(user).stream()
                 .map(alertMapper::toResponse)
                 .toList();
     }
@@ -39,8 +40,8 @@ public class AlertService {
         return alertMapper.toResponse(entity);
     }
 
-    public long count() {
-        return alertRepository.count();
+    public long count(User user) {
+        return alertRepository.countByUser(user);
     }
 
     public void deleteById(UUID id) {
@@ -56,37 +57,44 @@ public class AlertService {
         log.info("All alerts flushed.");
     }
 
-    public void checkAndTrigger(SensorType sensorType, String location, Map<Metric, Float> readings) {
-        log.info("checkAndTrigger called — type={} location={}", sensorType, location);
-        List<ThresholdSetting> settings = thresholdSettingRepository.findByType(sensorType);
-        for (ThresholdSetting setting : settings) {
-            Float value = readings.get(setting.getMetric());
-            if (value == null) {
+    public void checkAndTrigger(SensorType type, Map<Metric, Float> values, String location, User user) {
+        log.info("checkAndTrigger called — type={} location={} user={}", type, location, user.getUserId());
+        List<Settings> settings = settingsRepository.findByUser(user);
+        for (Settings setting : settings) {
+            if (setting.getType() != type) {
+                continue;
+            }
+            if (!values.containsKey(setting.getMetric())) {
+                continue;
+            }
+            Float actualValue = values.get(setting.getMetric());
+            if (actualValue == null) {
                 continue;
             }
             boolean breach = false;
-            if (setting.getAlertType() == AlertType.ABOVE && value > setting.getThresholdValue()) {
+            if (setting.getAlertType() == AlertType.ABOVE && actualValue > setting.getThresholdValue()) {
                 breach = true;
             }
-            if (setting.getAlertType() == AlertType.BELOW && value < setting.getThresholdValue()) {
+            if (setting.getAlertType() == AlertType.BELOW && actualValue < setting.getThresholdValue()) {
                 breach = true;
             }
             if (breach) {
                 AlertData alert = AlertData.builder()
-                        .sensorType(sensorType)
+                        .user(user)
+                        .sensorType(type)
                         .location(location)
                         .metric(setting.getMetric())
-                        .triggeredValue(value)
+                        .triggeredValue(actualValue)
                         .thresholdValue(setting.getThresholdValue())
                         .alertType(setting.getAlertType())
                         .build();
                 alertRepository.save(alert);
                 log.info(
                         "ALERT TRIGGERED — type={} location={} metric={} value={} threshold={} alertType={}",
-                        sensorType,
+                        type,
                         location,
                         setting.getMetric(),
-                        value,
+                        actualValue,
                         setting.getThresholdValue(),
                         setting.getAlertType());
             }

@@ -9,6 +9,8 @@ import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorResponse;
 import com.dxc.iotmonitor.sensor.airpollution.mapper.AirPollutionSensorMapper;
 import com.dxc.iotmonitor.sensor.airpollution.model.AirPollutionSensorData;
 import com.dxc.iotmonitor.sensor.airpollution.repository.AirPollutionSensorRepository;
+import com.dxc.iotmonitor.user.model.User;
+import com.dxc.iotmonitor.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -27,8 +30,9 @@ public class AirPollutionSensorService {
     private final AirPollutionSensorRepository airPollutionSensorRepository;
     private final AirPollutionSensorMapper airPollutionSensorMapper;
     private final AlertService alertService;
+    private final UserRepository userRepository;
 
-    public AirPollutionSensorResponse save(AirPollutionSensorRequest request) {
+    public AirPollutionSensorResponse save(AirPollutionSensorRequest request, Optional<User> user) {
         if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
             log.warn("[AirPollutionSensorService][save] validation failed: {}", message);
@@ -90,7 +94,13 @@ public class AirPollutionSensorService {
         Map<Metric, Float> readings = new HashMap<>();
         readings.put(Metric.CO, savedEntity.getCo());
         readings.put(Metric.OZONE, savedEntity.getOzone());
-        alertService.checkAndTrigger(SensorType.AIR_POLLUTION, savedEntity.getLocation(), readings);
+        if (user.isPresent()) {
+            alertService.checkAndTrigger(SensorType.AIR_POLLUTION, readings, savedEntity.getLocation(), user.get());
+        } else {
+            for (User u : userRepository.findAll()) {
+                alertService.checkAndTrigger(SensorType.AIR_POLLUTION, readings, savedEntity.getLocation(), u);
+            }
+        }
 
         return airPollutionSensorMapper.toResponse(savedEntity);
     }

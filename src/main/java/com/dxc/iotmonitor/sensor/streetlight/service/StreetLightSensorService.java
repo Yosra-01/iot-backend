@@ -9,6 +9,8 @@ import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorResponse;
 import com.dxc.iotmonitor.sensor.streetlight.mapper.StreetLightSensorMapper;
 import com.dxc.iotmonitor.sensor.streetlight.model.StreetLightSensorData;
 import com.dxc.iotmonitor.sensor.streetlight.repository.StreetLightSensorRepository;
+import com.dxc.iotmonitor.user.model.User;
+import com.dxc.iotmonitor.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -26,8 +29,9 @@ public class StreetLightSensorService {
     private final StreetLightSensorRepository streetLightSensorRepository;
     private final StreetLightSensorMapper streetLightSensorMapper;
     private final AlertService alertService;
+    private final UserRepository userRepository;
 
-    public StreetLightSensorResponse save(StreetLightSensorRequest request) {
+    public StreetLightSensorResponse save(StreetLightSensorRequest request, Optional<User> user) {
         if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
             log.warn("[StreetLightSensorService][save] validation failed: {}", message);
@@ -69,7 +73,13 @@ public class StreetLightSensorService {
         Map<Metric, Float> readings = new HashMap<>();
         readings.put(Metric.BRIGHTNESS_LEVEL, (float) savedEntity.getBrightnessLevel());
         readings.put(Metric.POWER_CONSUMPTION, savedEntity.getPowerConsumption());
-        alertService.checkAndTrigger(SensorType.STREET_LIGHT, savedEntity.getLocation(), readings);
+        if (user.isPresent()) {
+            alertService.checkAndTrigger(SensorType.STREET_LIGHT, readings, savedEntity.getLocation(), user.get());
+        } else {
+            for (User u : userRepository.findAll()) {
+                alertService.checkAndTrigger(SensorType.STREET_LIGHT, readings, savedEntity.getLocation(), u);
+            }
+        }
 
         return streetLightSensorMapper.toResponse(savedEntity);
     }

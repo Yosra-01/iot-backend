@@ -1,29 +1,32 @@
-package com.dxc.iotmonitor.alert.controller;
+package com.dxc.iotmonitor.settings;
 
-import com.dxc.iotmonitor.alert.dto.response.AlertResponse;
-import com.dxc.iotmonitor.alert.service.AlertService;
+import com.dxc.iotmonitor.settings.dto.SettingsRequest;
+import com.dxc.iotmonitor.settings.dto.SettingsResponse;
 import com.dxc.iotmonitor.security.JwtService;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
-@RestController
-@RequestMapping("/api/alerts")
 @RequiredArgsConstructor
-public class AlertController {
+@RestController
+@RequestMapping("/api/settings")
+@Slf4j
+public class SettingsController {
 
-    private final AlertService alertService;
+    private final SettingsService settingsService;
     private final JwtService jwtService;
     private final UserRepository userRepository;
 
@@ -35,32 +38,23 @@ public class AlertController {
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
+    @PutMapping
+    public ResponseEntity<List<SettingsResponse>> upsert(
+            HttpServletRequest request,
+            @RequestBody @Valid List<SettingsRequest> requests) {
+        User user = getCurrentUser(request);
+        return ResponseEntity.ok(settingsService.upsert(requests, user));
+    }
+
     @GetMapping
-    public ResponseEntity<List<AlertResponse>> findAll(HttpServletRequest request) {
+    public ResponseEntity<List<SettingsResponse>> findAll(HttpServletRequest request) {
         User user = getCurrentUser(request);
-        return ResponseEntity.ok(alertService.findAll(user));
-    }
-
-    @GetMapping("/count")
-    public ResponseEntity<Map<String, Long>> count(HttpServletRequest request) {
-        User user = getCurrentUser(request);
-        return ResponseEntity.ok(Map.of("count", alertService.count(user)));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<AlertResponse> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(alertService.findById(id));
+        return ResponseEntity.ok(settingsService.findAll(user));
     }
 
     @DeleteMapping("/flush")
     public ResponseEntity<Map<String, String>> flush() {
-        alertService.flush();
-        return ResponseEntity.ok(Map.of("message", "Alerts flushed successfully."));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Map<String, String>> deleteById(@PathVariable UUID id) {
-        alertService.deleteById(id);
-        return ResponseEntity.ok(Map.of("message", "Alert dismissed successfully."));
+        settingsService.flush();
+        return ResponseEntity.ok(Map.of("message", "Settings flushed successfully."));
     }
 }
