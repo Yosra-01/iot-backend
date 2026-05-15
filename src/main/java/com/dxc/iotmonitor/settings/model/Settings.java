@@ -1,4 +1,4 @@
-package com.dxc.iotmonitor.settings;
+package com.dxc.iotmonitor.settings.model;
 
 import com.dxc.iotmonitor.enums.AlertType;
 import com.dxc.iotmonitor.enums.Metric;

@@ -39,3 +39,6 @@ application-dev.properties
 ### OS ###
 .DS_Store
 Thumbs.db
+
+### Local profile picture uploads ###
+uploads/

@@ -1,10 +1,13 @@
-package com.dxc.iotmonitor.settings;
+package com.dxc.iotmonitor.settings.service;
 
 import com.dxc.iotmonitor.enums.AlertType;
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.settings.dto.SettingsRequest;
 import com.dxc.iotmonitor.settings.dto.SettingsResponse;
+import com.dxc.iotmonitor.settings.mapper.SettingsMapper;
+import com.dxc.iotmonitor.settings.model.Settings;
+import com.dxc.iotmonitor.settings.repository.SettingsRepository;
 import com.dxc.iotmonitor.user.model.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

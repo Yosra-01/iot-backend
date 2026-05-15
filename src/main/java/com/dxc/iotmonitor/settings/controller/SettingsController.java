@@ -1,8 +1,9 @@
-package com.dxc.iotmonitor.settings;
+package com.dxc.iotmonitor.settings.controller;
 
+import com.dxc.iotmonitor.security.JwtService;
 import com.dxc.iotmonitor.settings.dto.SettingsRequest;
 import com.dxc.iotmonitor.settings.dto.SettingsResponse;
-import com.dxc.iotmonitor.security.JwtService;
+import com.dxc.iotmonitor.settings.service.SettingsService;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;

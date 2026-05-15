@@ -1,7 +1,8 @@
-package com.dxc.iotmonitor.settings;
+package com.dxc.iotmonitor.settings.mapper;
 
 import com.dxc.iotmonitor.settings.dto.SettingsRequest;
 import com.dxc.iotmonitor.settings.dto.SettingsResponse;
+import com.dxc.iotmonitor.settings.model.Settings;
 import org.springframework.stereotype.Component;
 
 @Component

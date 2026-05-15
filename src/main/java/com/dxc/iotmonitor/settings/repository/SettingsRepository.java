@@ -1,8 +1,9 @@
-package com.dxc.iotmonitor.settings;
+package com.dxc.iotmonitor.settings.repository;
 
 import com.dxc.iotmonitor.enums.AlertType;
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.SensorType;
+import com.dxc.iotmonitor.settings.model.Settings;
 import com.dxc.iotmonitor.user.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
