@@ -17,6 +17,7 @@ public class AlertMapper {
                 .thresholdValue(alert.getThresholdValue())
                 .alertType(alert.getAlertType())
                 .triggeredAt(alert.getTriggeredAt())
+                .readingId(alert.getReadingId())
                 .build();
     }
 }

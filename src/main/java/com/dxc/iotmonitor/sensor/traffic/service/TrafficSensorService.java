@@ -75,10 +75,10 @@ public class TrafficSensorService {
         readings.put(Metric.TRAFFIC_DENSITY, (float) savedEntity.getTrafficDensity());
         readings.put(Metric.AVG_SPEED, savedEntity.getAvgSpeed());
         if (user.isPresent()) {
-            alertService.checkAndTrigger(SensorType.TRAFFIC, readings, savedEntity.getLocation(), user.get());
+            alertService.checkAndTrigger(SensorType.TRAFFIC, readings, savedEntity.getLocation(), user.get(), savedEntity.getId());
         } else {
             for (User u : userRepository.findAll()) {
-                alertService.checkAndTrigger(SensorType.TRAFFIC, readings, savedEntity.getLocation(), u);
+                alertService.checkAndTrigger(SensorType.TRAFFIC, readings, savedEntity.getLocation(), u, savedEntity.getId());
             }
         }
 

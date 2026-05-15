@@ -27,4 +27,5 @@ public class AlertResponse {
     private Float thresholdValue;
     private AlertType alertType;
     private LocalDateTime triggeredAt;
+    private UUID readingId;
 }

@@ -57,7 +57,7 @@ public class AlertService {
         log.info("All alerts flushed.");
     }
 
-    public void checkAndTrigger(SensorType type, Map<Metric, Float> values, String location, User user) {
+    public void checkAndTrigger(SensorType type, Map<Metric, Float> values, String location, User user, UUID readingId) {
         log.info("checkAndTrigger called — type={} location={} user={}", type, location, user.getUserId());
         List<Settings> settings = settingsRepository.findByUser(user);
         for (Settings setting : settings) {
@@ -87,6 +87,7 @@ public class AlertService {
                         .triggeredValue(actualValue)
                         .thresholdValue(setting.getThresholdValue())
                         .alertType(setting.getAlertType())
+                        .readingId(readingId)
                         .build();
                 alertRepository.save(alert);
                 log.info(

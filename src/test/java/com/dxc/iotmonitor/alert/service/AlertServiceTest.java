@@ -140,7 +140,8 @@ class AlertServiceTest {
                 SensorType.TRAFFIC,
                 Map.of(Metric.TRAFFIC_DENSITY, 480.0f),
                 "CAIRO_RING_ROAD",
-                user);
+                user,
+                UUID.randomUUID());
 
         verify(alertRepository, times(1)).save(any(AlertData.class));
     }
@@ -159,7 +160,8 @@ class AlertServiceTest {
                 SensorType.TRAFFIC,
                 Map.of(Metric.TRAFFIC_DENSITY, 300.0f),
                 "CAIRO_RING_ROAD",
-                user);
+                user,
+                UUID.randomUUID());
 
         verify(alertRepository, never()).save(any(AlertData.class));
     }

@@ -67,6 +67,8 @@ public class AlertData {
     @Column(nullable = false)
     private LocalDateTime triggeredAt;
 
+    private UUID readingId;
+
     @PrePersist
     protected void setTriggeredAtOnPersist() {
         triggeredAt = LocalDateTime.now();

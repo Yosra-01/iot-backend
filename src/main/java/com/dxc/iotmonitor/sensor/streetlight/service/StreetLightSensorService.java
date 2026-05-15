@@ -74,10 +74,10 @@ public class StreetLightSensorService {
         readings.put(Metric.BRIGHTNESS_LEVEL, (float) savedEntity.getBrightnessLevel());
         readings.put(Metric.POWER_CONSUMPTION, savedEntity.getPowerConsumption());
         if (user.isPresent()) {
-            alertService.checkAndTrigger(SensorType.STREET_LIGHT, readings, savedEntity.getLocation(), user.get());
+            alertService.checkAndTrigger(SensorType.STREET_LIGHT, readings, savedEntity.getLocation(), user.get(), savedEntity.getId());
         } else {
             for (User u : userRepository.findAll()) {
-                alertService.checkAndTrigger(SensorType.STREET_LIGHT, readings, savedEntity.getLocation(), u);
+                alertService.checkAndTrigger(SensorType.STREET_LIGHT, readings, savedEntity.getLocation(), u, savedEntity.getId());
             }
         }
 

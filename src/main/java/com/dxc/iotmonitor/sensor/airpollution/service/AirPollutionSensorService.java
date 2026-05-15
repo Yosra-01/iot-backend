@@ -95,10 +95,10 @@ public class AirPollutionSensorService {
         readings.put(Metric.CO, savedEntity.getCo());
         readings.put(Metric.OZONE, savedEntity.getOzone());
         if (user.isPresent()) {
-            alertService.checkAndTrigger(SensorType.AIR_POLLUTION, readings, savedEntity.getLocation(), user.get());
+            alertService.checkAndTrigger(SensorType.AIR_POLLUTION, readings, savedEntity.getLocation(), user.get(), savedEntity.getId());
         } else {
             for (User u : userRepository.findAll()) {
-                alertService.checkAndTrigger(SensorType.AIR_POLLUTION, readings, savedEntity.getLocation(), u);
+                alertService.checkAndTrigger(SensorType.AIR_POLLUTION, readings, savedEntity.getLocation(), u, savedEntity.getId());
             }
         }
 

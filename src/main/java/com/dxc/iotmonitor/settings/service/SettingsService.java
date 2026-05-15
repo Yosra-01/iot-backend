@@ -3,6 +3,7 @@ package com.dxc.iotmonitor.settings.service;
 import com.dxc.iotmonitor.enums.AlertType;
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.SensorType;
+import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.settings.dto.SettingsRequest;
 import com.dxc.iotmonitor.settings.dto.SettingsResponse;
 import com.dxc.iotmonitor.settings.mapper.SettingsMapper;
@@ -11,6 +12,7 @@ import com.dxc.iotmonitor.settings.repository.SettingsRepository;
 import com.dxc.iotmonitor.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumMap;
@@ -18,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -108,6 +111,30 @@ public class SettingsService {
     public void flush() {
         settingsRepository.deleteAll();
         log.info("[SettingsService][flush] all settings deleted");
+    }
+
+    public void deleteById(String id, User user) {
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(id);
+        } catch (IllegalArgumentException e) {
+            log.warn("[SettingsService][deleteById] invalid UUID format: {}", id);
+            throw new IllegalArgumentException("Invalid settings ID format.");
+        }
+
+        Settings setting = settingsRepository.findById(uuid)
+                .orElseThrow(() -> {
+                    log.warn("[SettingsService][deleteById] not found: {}", id);
+                    return new ResourceNotFoundException("Setting not found.");
+                });
+
+        if (!setting.getUser().getUserId().equals(user.getUserId())) {
+            log.warn("[SettingsService][deleteById] forbidden: user {} does not own setting {}", user.getUserId(), id);
+            throw new AccessDeniedException("You do not have permission to delete this setting.");
+        }
+
+        settingsRepository.deleteById(uuid);
+        log.info("[SettingsService][deleteById] deleted setting id={} by user={}", id, user.getUserId());
     }
 
     private void validateMetricForSensorType(SensorType type, Metric metric) {
