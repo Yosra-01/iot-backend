@@ -59,7 +59,7 @@ class AuthServiceTest {
     void createUser_Success() {
         // Arrange
         SignupRequest request = new SignupRequest(
-                "john.doe@example.com", "John", "Doe", "SecurePass1!", null
+                "john.doe@example.com", "John", "Doe", "SecurePass1!"
         );
 
         User mappedUser = new User();
@@ -88,7 +88,7 @@ class AuthServiceTest {
     void createUser_DuplicateEmail_ThrowsDuplicateEmailException() {
         // Arrange
         SignupRequest request = new SignupRequest(
-                "john.doe@example.com", "John", "Doe", "SecurePass1!", null
+                "john.doe@example.com", "John", "Doe", "SecurePass1!"
         );
 
         when(userRepository.existsByEmailIgnoreCase(request.getEmail())).thenReturn(true);
