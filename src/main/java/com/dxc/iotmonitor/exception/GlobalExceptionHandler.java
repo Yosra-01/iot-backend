@@ -8,9 +8,13 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.context.MessageSourceResolvable;
 
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -76,6 +80,44 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
     }
 
+    //400 Bad Request - for @RequestBody @Valid List and other method validation (Spring Boot 3)
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ErrorResponse> handleHandlerMethodValidation(HandlerMethodValidationException e) {
+        List<String> messages = e.getAllErrors().stream()
+                .map(this::resolveValidationMessage)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (messages.isEmpty()) {
+            messages = List.of("Validation failed");
+        }
+
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                messages
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    private String resolveValidationMessage(MessageSourceResolvable error) {
+        if (error instanceof FieldError fieldError) {
+            return fieldError.getDefaultMessage();
+        }
+        String message = error.getDefaultMessage();
+        if (message != null) {
+            return message;
+        }
+        if (error instanceof DefaultMessageSourceResolvable resolvable) {
+            String[] codes = resolvable.getCodes();
+            if (codes != null && codes.length > 0) {
+                return codes[0];
+            }
+        }
+        return error.toString();
+    }
+
     //400 Bad Request
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
@@ -93,9 +135,30 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
-                "Invalid value for enum field. Check allowed values."
+                "invalid metric for this sensor type"
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    //400 Bad Request - invalid UUID in path variable
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Bad Request",
+                "Invalid UUID string: " + e.getValue()
+        );
+        return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+    //403 Forbidden
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException e) {
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                "Forbidden",
+                e.getMessage()
+        );
+        return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
     }
 
     //500 Internal Error

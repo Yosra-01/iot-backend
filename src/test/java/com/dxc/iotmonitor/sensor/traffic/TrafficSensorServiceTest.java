@@ -19,9 +19,14 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TrafficSensorServiceTest {
@@ -73,6 +78,24 @@ class TrafficSensorServiceTest {
 
         assertNotNull(response);
         verify(trafficSensorRepository, times(1)).save(entity);
+    }
+
+    @Test
+    void save_rejectsAirPollutionLocation() {
+        TrafficSensorRequest request = TrafficSensorRequest.builder()
+                .location("CAIRO_NASR_CITY")
+                .timestamp(LocalDateTime.now())
+                .trafficDensity(200)
+                .avgSpeed(60.0f)
+                .congestionLevel(CongestionLevel.MODERATE)
+                .build();
+
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> trafficSensorService.save(request, Optional.empty()));
+
+        assertEquals("invalid location for this sensor type", ex.getMessage());
+        verify(trafficSensorRepository, never()).save(any());
     }
 
     @Test

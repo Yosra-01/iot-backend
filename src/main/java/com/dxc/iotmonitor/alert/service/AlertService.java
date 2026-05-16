@@ -13,6 +13,7 @@ import com.dxc.iotmonitor.settings.repository.SettingsRepository;
 import com.dxc.iotmonitor.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -34,9 +35,10 @@ public class AlertService {
                 .toList();
     }
 
-    public AlertResponse findById(UUID id) {
+    public AlertResponse findById(UUID id, User user) {
         AlertData entity = alertRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found."));
+        assertOwnedByUser(entity, user, id);
         return alertMapper.toResponse(entity);
     }
 
@@ -44,12 +46,19 @@ public class AlertService {
         return alertRepository.countByUser(user);
     }
 
-    public void deleteById(UUID id) {
-        if (alertRepository.findById(id).isEmpty()) {
-            throw new ResourceNotFoundException("Alert not found.");
-        }
+    public void deleteById(UUID id, User user) {
+        AlertData entity = alertRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found."));
+        assertOwnedByUser(entity, user, id);
         alertRepository.deleteById(id);
-        log.info("Alert dismissed: {}", id);
+        log.info("Alert dismissed: id={} by user={}", id, user.getUserId());
+    }
+
+    private void assertOwnedByUser(AlertData alert, User user, UUID id) {
+        if (!alert.getUser().getUserId().equals(user.getUserId())) {
+            log.warn("Alert access denied: user {} does not own alert {}", user.getUserId(), id);
+            throw new AccessDeniedException("You do not have permission to access this alert.");
+        }
     }
 
     public void flush() {

@@ -3,6 +3,7 @@ package com.dxc.iotmonitor.sensor.streetlight.service;
 import com.dxc.iotmonitor.alert.service.AlertService;
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.SensorType;
+import com.dxc.iotmonitor.sensor.SensorLocations;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorRequest;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorResponse;
@@ -34,6 +35,11 @@ public class StreetLightSensorService {
     public StreetLightSensorResponse save(StreetLightSensorRequest request, Optional<User> user) {
         if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
+            log.warn("[StreetLightSensorService][save] validation failed: {}", message);
+            throw new IllegalArgumentException(message);
+        }
+        if (!SensorLocations.isValid(SensorType.STREET_LIGHT, request.getLocation())) {
+            String message = "invalid location for this sensor type";
             log.warn("[StreetLightSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }

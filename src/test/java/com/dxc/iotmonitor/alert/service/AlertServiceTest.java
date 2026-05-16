@@ -16,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -73,15 +75,39 @@ class AlertServiceTest {
     void findById_found_returnsMappedResponse() {
         AlertData alertData = new AlertData();
         alertData.setId(UUID.randomUUID());
+        alertData.setUser(user);
         AlertResponse response = new AlertResponse();
         response.setId(alertData.getId());
 
         when(alertRepository.findById(any(UUID.class))).thenReturn(Optional.of(alertData));
         when(alertMapper.toResponse(alertData)).thenReturn(response);
 
-        AlertResponse result = alertService.findById(alertData.getId());
+        AlertResponse result = alertService.findById(alertData.getId(), user);
 
         assertNotNull(result);
+    }
+
+    @Test
+    void findById_notOwned_throwsAccessDeniedException() {
+        User otherUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email("other@example.com")
+                .firstName("O")
+                .lastName("Ther")
+                .password("x")
+                .build();
+
+        AlertData alertData = new AlertData();
+        alertData.setId(UUID.randomUUID());
+        alertData.setUser(otherUser);
+
+        when(alertRepository.findById(alertData.getId())).thenReturn(Optional.of(alertData));
+
+        AccessDeniedException ex = assertThrows(
+                AccessDeniedException.class,
+                () -> alertService.findById(alertData.getId(), user));
+
+        assertTrue(ex.getMessage().contains("permission"));
     }
 
     @Test
@@ -90,7 +116,7 @@ class AlertServiceTest {
 
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
-                () -> alertService.findById(UUID.randomUUID()));
+                () -> alertService.findById(UUID.randomUUID(), user));
 
         assertEquals("Alert not found.", ex.getMessage());
     }
@@ -107,12 +133,38 @@ class AlertServiceTest {
         UUID id = UUID.randomUUID();
         AlertData alertData = new AlertData();
         alertData.setId(id);
+        alertData.setUser(user);
 
         when(alertRepository.findById(id)).thenReturn(Optional.of(alertData));
 
-        alertService.deleteById(id);
+        alertService.deleteById(id, user);
 
         verify(alertRepository, times(1)).deleteById(id);
+    }
+
+    @Test
+    void deleteById_notOwned_throwsAccessDeniedException() {
+        User otherUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email("other@example.com")
+                .firstName("O")
+                .lastName("Ther")
+                .password("x")
+                .build();
+
+        UUID id = UUID.randomUUID();
+        AlertData alertData = new AlertData();
+        alertData.setId(id);
+        alertData.setUser(otherUser);
+
+        when(alertRepository.findById(id)).thenReturn(Optional.of(alertData));
+
+        AccessDeniedException ex = assertThrows(
+                AccessDeniedException.class,
+                () -> alertService.deleteById(id, user));
+
+        assertTrue(ex.getMessage().contains("permission"));
+        verify(alertRepository, never()).deleteById(id);
     }
 
     @Test
@@ -121,7 +173,7 @@ class AlertServiceTest {
 
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
-                () -> alertService.deleteById(UUID.randomUUID()));
+                () -> alertService.deleteById(UUID.randomUUID(), user));
 
         assertEquals("Alert not found.", ex.getMessage());
     }

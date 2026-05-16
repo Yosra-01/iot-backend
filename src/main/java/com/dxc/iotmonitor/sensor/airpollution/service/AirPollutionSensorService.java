@@ -3,6 +3,7 @@ package com.dxc.iotmonitor.sensor.airpollution.service;
 import com.dxc.iotmonitor.alert.service.AlertService;
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.SensorType;
+import com.dxc.iotmonitor.sensor.SensorLocations;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorRequest;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorResponse;
@@ -35,6 +36,11 @@ public class AirPollutionSensorService {
     public AirPollutionSensorResponse save(AirPollutionSensorRequest request, Optional<User> user) {
         if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
+            log.warn("[AirPollutionSensorService][save] validation failed: {}", message);
+            throw new IllegalArgumentException(message);
+        }
+        if (!SensorLocations.isValid(SensorType.AIR_POLLUTION, request.getLocation())) {
+            String message = "invalid location for this sensor type";
             log.warn("[AirPollutionSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }

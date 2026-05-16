@@ -3,6 +3,8 @@ package com.dxc.iotmonitor.scheduler;
 import com.dxc.iotmonitor.enums.CongestionLevel;
 import com.dxc.iotmonitor.enums.LightStatus;
 import com.dxc.iotmonitor.enums.PollutionLevel;
+import com.dxc.iotmonitor.enums.SensorType;
+import com.dxc.iotmonitor.sensor.SensorLocations;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorRequest;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorResponse;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorRequest;
@@ -18,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -25,22 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 @RequiredArgsConstructor
 public class SensorScheduler {
-
-    private static final String[] TRAFFIC_LOCATIONS = {
-            "CAIRO_RING_ROAD",
-            "CAIRO_OCTOBER_BRIDGE",
-            "CAIRO_SALAH_SALEM_ROAD",
-    };
-    private static final String[] AIR_POLLUTION_LOCATIONS = {
-            "CAIRO_NASR_CITY",
-            "CAIRO_MAADI",
-            "CAIRO_HELIOPOLIS",
-    };
-    private static final String[] STREET_LIGHT_LOCATIONS = {
-            "CAIRO_ZAMALEK",
-            "CAIRO_DOWNTOWN",
-            "CAIRO_NEW_CAIRO",
-    };
 
     private static final AtomicInteger trafficRunCount = new AtomicInteger(0);
     private static final AtomicInteger airPollutionRunCount = new AtomicInteger(0);
@@ -246,7 +233,7 @@ public class SensorScheduler {
 
     private TrafficSensorRequest buildTrafficRequest() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        String trafficLocation = TRAFFIC_LOCATIONS[rnd.nextInt(TRAFFIC_LOCATIONS.length)];
+        String trafficLocation = randomLocation(SensorType.TRAFFIC, rnd);
         CongestionLevel congestion = CongestionLevel.values()[rnd.nextInt(CongestionLevel.values().length)];
         float[] densityBand = trafficDensityBand(congestion);
         float[] speedBand = trafficSpeedBand(congestion);
@@ -282,7 +269,7 @@ public class SensorScheduler {
 
     private AirPollutionSensorRequest buildAirPollutionRequest() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        String airLocation = AIR_POLLUTION_LOCATIONS[rnd.nextInt(AIR_POLLUTION_LOCATIONS.length)];
+        String airLocation = randomLocation(SensorType.AIR_POLLUTION, rnd);
         PollutionLevel level = PollutionLevel.values()[rnd.nextInt(PollutionLevel.values().length)];
         float[] band = pollutionBandFractions(level);
         return AirPollutionSensorRequest.builder()
@@ -300,7 +287,7 @@ public class SensorScheduler {
 
     private StreetLightSensorRequest buildStreetLightRequest() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
-        String lightLocation = STREET_LIGHT_LOCATIONS[rnd.nextInt(STREET_LIGHT_LOCATIONS.length)];
+        String lightLocation = randomLocation(SensorType.STREET_LIGHT, rnd);
         LightStatus status = LightStatus.values()[rnd.nextInt(LightStatus.values().length)];
         float[] brightnessBand = streetBrightnessBand(status);
         float[] powerBand = streetPowerBand(status);
@@ -311,6 +298,11 @@ public class SensorScheduler {
                 .powerConsumption(randomMetricInBand(rnd, STREET_POWER_MAX, powerBand))
                 .status(status)
                 .build();
+    }
+
+    private static String randomLocation(SensorType type, ThreadLocalRandom rnd) {
+        List<String> locations = SensorLocations.forType(type);
+        return locations.get(rnd.nextInt(locations.size()));
     }
 
     private String apiUrl(String path) {

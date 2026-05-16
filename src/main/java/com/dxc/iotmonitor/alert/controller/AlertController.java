@@ -2,12 +2,12 @@ package com.dxc.iotmonitor.alert.controller;
 
 import com.dxc.iotmonitor.alert.dto.response.AlertResponse;
 import com.dxc.iotmonitor.alert.service.AlertService;
-import com.dxc.iotmonitor.security.JwtService;
+import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,32 +24,30 @@ import java.util.UUID;
 public class AlertController {
 
     private final AlertService alertService;
-    private final JwtService jwtService;
     private final UserRepository userRepository;
 
-    private User getCurrentUser(HttpServletRequest request) {
-        String token = request.getHeader("Authorization").substring(7);
-        String email = jwtService.extractUsername(token);
-        return userRepository
-                .findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-
     @GetMapping
-    public ResponseEntity<List<AlertResponse>> findAll(HttpServletRequest request) {
-        User user = getCurrentUser(request);
+    public ResponseEntity<List<AlertResponse>> findAll() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         return ResponseEntity.ok(alertService.findAll(user));
     }
 
     @GetMapping("/count")
-    public ResponseEntity<Map<String, Long>> count(HttpServletRequest request) {
-        User user = getCurrentUser(request);
+    public ResponseEntity<Map<String, Long>> count() {
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         return ResponseEntity.ok(Map.of("count", alertService.count(user)));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<AlertResponse> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(alertService.findById(id));
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+        return ResponseEntity.ok(alertService.findById(id, user));
     }
 
     @DeleteMapping("/flush")
@@ -60,7 +58,10 @@ public class AlertController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteById(@PathVariable UUID id) {
-        alertService.deleteById(id);
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+        alertService.deleteById(id, user);
         return ResponseEntity.ok(Map.of("message", "Alert dismissed successfully."));
     }
 }

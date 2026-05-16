@@ -1,16 +1,17 @@
 package com.dxc.iotmonitor.sensor.airpollution.controller;
 
-import com.dxc.iotmonitor.security.JwtService;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorRequest;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorResponse;
 import com.dxc.iotmonitor.sensor.airpollution.service.AirPollutionSensorService;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,27 +29,16 @@ import java.util.Optional;
 public class AirPollutionSensorController {
 
     private final AirPollutionSensorService airPollutionSensorService;
-    private final JwtService jwtService;
     private final UserRepository userRepository;
-
-    private Optional<User> resolveOptionalUser(HttpServletRequest request) {
-        String auth = request.getHeader("Authorization");
-        if (auth == null || auth.isBlank() || !auth.startsWith("Bearer ")) {
-            return Optional.empty();
-        }
-        String token = auth.substring(7).trim();
-        if (token.isBlank()) {
-            return Optional.empty();
-        }
-        String email = jwtService.extractUsername(token);
-        return userRepository.findByEmailIgnoreCase(email);
-    }
 
     @PostMapping
     public ResponseEntity<AirPollutionSensorResponse> create(
-            HttpServletRequest request,
             @Valid @RequestBody AirPollutionSensorRequest body) {
-        Optional<User> user = resolveOptionalUser(request);
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Optional<User> user = (auth != null && auth.isAuthenticated()
+                && !(auth instanceof AnonymousAuthenticationToken))
+                ? userRepository.findByEmailIgnoreCase(auth.getName())
+                : Optional.empty();
         return ResponseEntity.status(HttpStatus.CREATED).body(airPollutionSensorService.save(body, user));
     }
 

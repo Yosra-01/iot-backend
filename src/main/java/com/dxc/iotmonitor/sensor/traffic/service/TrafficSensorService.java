@@ -3,6 +3,7 @@ package com.dxc.iotmonitor.sensor.traffic.service;
 import com.dxc.iotmonitor.alert.service.AlertService;
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.SensorType;
+import com.dxc.iotmonitor.sensor.SensorLocations;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorRequest;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorResponse;
@@ -35,6 +36,11 @@ public class TrafficSensorService {
     public TrafficSensorResponse save(TrafficSensorRequest request, Optional<User> user) {
         if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
+            log.warn("[TrafficSensorService][save] validation failed: {}", message);
+            throw new IllegalArgumentException(message);
+        }
+        if (!SensorLocations.isValid(SensorType.TRAFFIC, request.getLocation())) {
+            String message = "invalid location for this sensor type";
             log.warn("[TrafficSensorService][save] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
