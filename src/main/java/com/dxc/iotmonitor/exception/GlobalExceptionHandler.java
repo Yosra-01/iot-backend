@@ -3,6 +3,8 @@ package com.dxc.iotmonitor.exception;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -135,9 +137,37 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
                 "Bad Request",
-                "invalid metric for this sensor type"
+                resolveHttpMessageNotReadableMessage(e)
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
+    }
+
+    private String resolveHttpMessageNotReadableMessage(HttpMessageNotReadableException e) {
+        Throwable cause = e.getCause();
+        while (cause != null) {
+            if (cause instanceof InvalidFormatException ife && ife.getTargetType() != null
+                    && ife.getTargetType().isEnum()) {
+                return "invalid metric for this sensor type";
+            }
+            if (cause instanceof MismatchedInputException) {
+                return "Invalid value for field.";
+            }
+            if (cause instanceof InvalidFormatException) {
+                return "Invalid value for field.";
+            }
+            String msg = cause.getMessage();
+            if (msg != null) {
+                String lower = msg.toLowerCase();
+                if (lower.contains("enum") && lower.contains("value")) {
+                    return "invalid metric for this sensor type";
+                }
+                if (lower.contains("floating point") || lower.contains("integral type")) {
+                    return "Invalid value for field.";
+                }
+            }
+            cause = cause.getCause();
+        }
+        return "Invalid value for field.";
     }
 
     //400 Bad Request - invalid UUID in path variable
