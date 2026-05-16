@@ -42,8 +42,21 @@ public class UserService {
                 .findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         ProfileResponse response = userMapper.toResponse(user);
-        response.setProfilePicture(PROFILE_PICTURE_API_PATH);
+        response.setProfilePicture(resolveProfilePictureApiPath(user.getUserId()));
         return response;
+    }
+
+    /**
+     * API locator for the authenticated user's picture, or null when no file exists on disk.
+     */
+    private String resolveProfilePictureApiPath(UUID userId) {
+        try {
+            return findStoredPicture(userId)
+                    .map(ignored -> PROFILE_PICTURE_API_PATH)
+                    .orElse(null);
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     public void updateProfilePicture(String email, MultipartFile file) throws IOException {

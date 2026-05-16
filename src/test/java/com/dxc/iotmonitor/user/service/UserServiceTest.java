@@ -57,14 +57,12 @@ class UserServiceTest {
     // ================================================================
 
     @Test
-    void getProfile_Success() {
-        // Arrange
+    void getProfile_NoPictureOnDisk_ReturnsNullProfilePicture() {
         String email = "john.doe@example.com";
 
         User user = new User();
         user.setEmail(email);
-        user.setFirstName("John");
-        user.setLastName("Doe");
+        user.setUserId(UUID.randomUUID());
 
         ProfileResponse expectedResponse = new ProfileResponse();
         expectedResponse.setEmail(email);
@@ -72,15 +70,37 @@ class UserServiceTest {
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
         when(userMapper.toResponse(user)).thenReturn(expectedResponse);
 
-        // Act
         ProfileResponse result = userService.getProfile(email);
 
-        // Assert
         assertNotNull(result);
         assertEquals(email, result.getEmail());
-        assertEquals("/api/user/profile/picture", result.getProfilePicture());
+        assertNull(result.getProfilePicture());
         verify(userRepository, times(1)).findByEmailIgnoreCase(email);
         verify(userMapper, times(1)).toResponse(user);
+    }
+
+    @Test
+    void getProfile_PictureOnDisk_ReturnsApiPath() throws IOException {
+        String email = "john.doe@example.com";
+        UUID userId = UUID.randomUUID();
+
+        User user = new User();
+        user.setEmail(email);
+        user.setUserId(userId);
+
+        ProfileResponse expectedResponse = new ProfileResponse();
+        expectedResponse.setEmail(email);
+
+        Files.createDirectories(tempProfilePicturesRoot);
+        Files.writeString(tempProfilePicturesRoot.resolve(userId + ".jpeg"), "x");
+
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
+        when(userMapper.toResponse(user)).thenReturn(expectedResponse);
+
+        ProfileResponse result = userService.getProfile(email);
+
+        assertNotNull(result);
+        assertEquals("/api/user/profile/picture", result.getProfilePicture());
     }
 
     // ================================================================
