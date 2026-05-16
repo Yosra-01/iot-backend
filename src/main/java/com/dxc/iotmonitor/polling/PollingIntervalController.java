@@ -7,11 +7,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -42,5 +45,11 @@ public class PollingIntervalController {
             @RequestBody @Valid PollingIntervalRequest body) {
         User user = getCurrentUser(request);
         return ResponseEntity.ok(pollingIntervalService.upsert(user, body));
+    }
+
+    @DeleteMapping("/flush")
+    public ResponseEntity<Map<String, String>> flush() {
+        pollingIntervalService.flush();
+        return ResponseEntity.ok(Map.of("message", "Polling intervals flushed successfully."));
     }
 }

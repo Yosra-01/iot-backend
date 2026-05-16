@@ -46,4 +46,9 @@ public class PollingIntervalService {
         entity.setStreetLightInterval(5);
         pollingIntervalRepository.save(entity);
     }
+
+    public void flush() {
+        pollingIntervalRepository.deleteAll();
+        log.info("[PollingIntervalService][flush] all polling intervals deleted");
+    }
 }

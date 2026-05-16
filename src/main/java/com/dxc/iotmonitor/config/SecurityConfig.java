@@ -42,7 +42,8 @@ public class SecurityConfig {
                                 "/api/sensors/air-pollution/flush",
                                 "/api/sensors/street-lights/flush",
                                 "/api/settings/flush",
-                                "/api/alerts/flush"
+                                "/api/alerts/flush",
+                                "/api/intervals/flush"
                         ).permitAll()
                         // Scheduler / external simulators POST readings without JWT (same idea as /generate).
                         .requestMatchers(HttpMethod.POST,
