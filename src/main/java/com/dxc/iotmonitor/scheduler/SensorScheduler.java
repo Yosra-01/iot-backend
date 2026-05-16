@@ -179,43 +179,137 @@ public class SensorScheduler {
         }
     }
 
+    private static final int TRAFFIC_DENSITY_MAX = 500;
+    private static final float TRAFFIC_SPEED_MAX = 120f;
+    private static final int STREET_BRIGHTNESS_MAX = 100;
+    private static final float STREET_POWER_MAX = 5000f;
+
+    /**
+     * Traffic density band (fraction of {@link #TRAFFIC_DENSITY_MAX}) for each congestion level.
+     */
+    private static float[] trafficDensityBand(CongestionLevel level) {
+        return switch (level) {
+            case LOW -> new float[]{0.02f, 0.26f};
+            case MODERATE -> new float[]{0.22f, 0.48f};
+            case HIGH -> new float[]{0.42f, 0.72f};
+            case SEVERE -> new float[]{0.68f, 1.0f};
+        };
+    }
+
+    /**
+     * Average speed band (fraction of {@link #TRAFFIC_SPEED_MAX}): inverse of congestion — severe traffic is slow.
+     */
+    private static float[] trafficSpeedBand(CongestionLevel level) {
+        return switch (level) {
+            case LOW -> new float[]{0.55f, 0.98f};
+            case MODERATE -> new float[]{0.38f, 0.68f};
+            case HIGH -> new float[]{0.22f, 0.52f};
+            case SEVERE -> new float[]{0.05f, 0.38f};
+        };
+    }
+
+    private static float randomMetricInBand(ThreadLocalRandom rnd, float metricMax, float[] band) {
+        float lo = metricMax * band[0];
+        float hi = metricMax * band[1];
+        float v = lo + rnd.nextFloat() * (hi - lo);
+        return Math.round(v * 100.0f) / 100.0f;
+    }
+
+    private static int randomIntInBand(ThreadLocalRandom rnd, int maxInclusive, float[] band) {
+        int lo = Math.max(0, (int) Math.floor(maxInclusive * band[0]));
+        int hi = Math.min(maxInclusive, (int) Math.ceil(maxInclusive * band[1]));
+        if (hi <= lo) {
+            hi = Math.min(maxInclusive, lo + 1);
+        }
+        return rnd.nextInt(lo, hi + 1);
+    }
+
+    /**
+     * Brightness % band (0–100) by lamp status: ON is visibly lit, OFF is near-dark.
+     */
+    private static float[] streetBrightnessBand(LightStatus status) {
+        return switch (status) {
+            case ON -> new float[]{0.48f, 1.0f};
+            case OFF -> new float[]{0.0f, 0.10f};
+        };
+    }
+
+    /**
+     * Power draw band (fraction of {@link #STREET_POWER_MAX}): ON draws meaningful load, OFF minimal.
+     */
+    private static float[] streetPowerBand(LightStatus status) {
+        return switch (status) {
+            case ON -> new float[]{0.15f, 0.98f};
+            case OFF -> new float[]{0.0f, 0.06f};
+        };
+    }
+
     private TrafficSensorRequest buildTrafficRequest() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
         String trafficLocation = TRAFFIC_LOCATIONS[rnd.nextInt(TRAFFIC_LOCATIONS.length)];
+        CongestionLevel congestion = CongestionLevel.values()[rnd.nextInt(CongestionLevel.values().length)];
+        float[] densityBand = trafficDensityBand(congestion);
+        float[] speedBand = trafficSpeedBand(congestion);
         return TrafficSensorRequest.builder()
                 .location(trafficLocation)
                 .timestamp(LocalDateTime.now().withNano(0))
-                .trafficDensity(rnd.nextInt(0, 501))
-                .avgSpeed(Math.round(rnd.nextFloat() * 120 * 100.0f) / 100.0f)
-                .congestionLevel(CongestionLevel.values()[rnd.nextInt(CongestionLevel.values().length)])
+                .trafficDensity(randomIntInBand(rnd, TRAFFIC_DENSITY_MAX, densityBand))
+                .avgSpeed(randomMetricInBand(rnd, TRAFFIC_SPEED_MAX, speedBand))
+                .congestionLevel(congestion)
                 .build();
+    }
+
+    /** Upper bounds aligned with the scheduler's previous random ranges (service validation uses similar scales). */
+    private static final float AIR_PM25_MAX = 500f;
+    private static final float AIR_PM10_MAX = 600f;
+    private static final float AIR_CO_MAX = 50f;
+    private static final float AIR_NO2_MAX = 200f;
+    private static final float AIR_SO2_MAX = 350f;
+    private static final float AIR_OZONE_MAX = 300f;
+
+    /**
+     * Fraction of each metric's max for a coherent reading: GOOD stays low across pollutants, HAZARDOUS stays high.
+     */
+    private static float[] pollutionBandFractions(PollutionLevel level) {
+        return switch (level) {
+            case GOOD -> new float[]{0.03f, 0.18f};
+            case MODERATE -> new float[]{0.15f, 0.38f};
+            case UNHEALTHY -> new float[]{0.32f, 0.58f};
+            case VERY_UNHEALTHY -> new float[]{0.52f, 0.82f};
+            case HAZARDOUS -> new float[]{0.75f, 1.0f};
+        };
     }
 
     private AirPollutionSensorRequest buildAirPollutionRequest() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
         String airLocation = AIR_POLLUTION_LOCATIONS[rnd.nextInt(AIR_POLLUTION_LOCATIONS.length)];
+        PollutionLevel level = PollutionLevel.values()[rnd.nextInt(PollutionLevel.values().length)];
+        float[] band = pollutionBandFractions(level);
         return AirPollutionSensorRequest.builder()
                 .location(airLocation)
                 .timestamp(LocalDateTime.now().withNano(0))
-                .pm2_5(Math.round(rnd.nextFloat() * 500 * 100.0f) / 100.0f)
-                .pm10(Math.round(rnd.nextFloat() * 600 * 100.0f) / 100.0f)
-                .co(Math.round(rnd.nextFloat() * 50 * 100.0f) / 100.0f)
-                .no2(Math.round(rnd.nextFloat() * 200 * 100.0f) / 100.0f)
-                .so2(Math.round(rnd.nextFloat() * 350 * 100.0f) / 100.0f)
-                .ozone(Math.round(rnd.nextFloat() * 300 * 100.0f) / 100.0f)
-                .pollutionLevel(PollutionLevel.values()[rnd.nextInt(PollutionLevel.values().length)])
+                .pm2_5(randomMetricInBand(rnd, AIR_PM25_MAX, band))
+                .pm10(randomMetricInBand(rnd, AIR_PM10_MAX, band))
+                .co(randomMetricInBand(rnd, AIR_CO_MAX, band))
+                .no2(randomMetricInBand(rnd, AIR_NO2_MAX, band))
+                .so2(randomMetricInBand(rnd, AIR_SO2_MAX, band))
+                .ozone(randomMetricInBand(rnd, AIR_OZONE_MAX, band))
+                .pollutionLevel(level)
                 .build();
     }
 
     private StreetLightSensorRequest buildStreetLightRequest() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
         String lightLocation = STREET_LIGHT_LOCATIONS[rnd.nextInt(STREET_LIGHT_LOCATIONS.length)];
+        LightStatus status = LightStatus.values()[rnd.nextInt(LightStatus.values().length)];
+        float[] brightnessBand = streetBrightnessBand(status);
+        float[] powerBand = streetPowerBand(status);
         return StreetLightSensorRequest.builder()
                 .location(lightLocation)
                 .timestamp(LocalDateTime.now().withNano(0))
-                .brightnessLevel(rnd.nextInt(0, 101))
-                .powerConsumption(Math.round(rnd.nextFloat() * 5000 * 100.0f) / 100.0f)
-                .status(LightStatus.values()[rnd.nextInt(LightStatus.values().length)])
+                .brightnessLevel(randomIntInBand(rnd, STREET_BRIGHTNESS_MAX, brightnessBand))
+                .powerConsumption(randomMetricInBand(rnd, STREET_POWER_MAX, powerBand))
+                .status(status)
                 .build();
     }
 
