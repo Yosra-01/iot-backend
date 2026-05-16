@@ -6,6 +6,8 @@ import com.dxc.iotmonitor.auth.dto.SignupRequest;
 import com.dxc.iotmonitor.auth.mapper.AuthMapper;
 import com.dxc.iotmonitor.exception.DuplicateEmailException;
 import com.dxc.iotmonitor.exception.InvalidCredentialsException;
+import com.dxc.iotmonitor.polling.PollingIntervalRepository;
+import com.dxc.iotmonitor.polling.PollingIntervalService;
 import com.dxc.iotmonitor.security.JwtUtil;
 import com.dxc.iotmonitor.security.TokenBlacklistService;
 import com.dxc.iotmonitor.user.model.User;
@@ -40,6 +42,12 @@ class AuthServiceTest {
     @Mock
     private AuthMapper authMapper;
 
+    @Mock
+    private PollingIntervalRepository pollingIntervalRepository;
+
+    @Mock
+    private PollingIntervalService pollingIntervalService;
+
     @InjectMocks
     private AuthService authService;
 
@@ -51,7 +59,7 @@ class AuthServiceTest {
     void createUser_Success() {
         // Arrange
         SignupRequest request = new SignupRequest(
-                "john.doe@example.com", "John", "Doe", "securePassword123", null
+                "john.doe@example.com", "John", "Doe", "SecurePass1!", null
         );
 
         User mappedUser = new User();
@@ -80,7 +88,7 @@ class AuthServiceTest {
     void createUser_DuplicateEmail_ThrowsDuplicateEmailException() {
         // Arrange
         SignupRequest request = new SignupRequest(
-                "john.doe@example.com", "John", "Doe", "securePassword123", null
+                "john.doe@example.com", "John", "Doe", "SecurePass1!", null
         );
 
         when(userRepository.existsByEmailIgnoreCase(request.getEmail())).thenReturn(true);
@@ -112,6 +120,7 @@ class AuthServiceTest {
 
         when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(request.getPassword(), existingUser.getPassword())).thenReturn(true);
+        when(pollingIntervalRepository.findByUser(existingUser)).thenReturn(Optional.empty());
         when(jwtUtil.generateToken(existingUser.getEmail())).thenReturn("mocked-jwt-token");
         when(authMapper.toResponse(existingUser)).thenReturn(expectedResponse);
 
@@ -122,6 +131,7 @@ class AuthServiceTest {
         assertNotNull(result);
         assertEquals("mocked-jwt-token", result.getToken());
         assertEquals("Login successful.", result.getMessage());
+        verify(pollingIntervalService).createDefault(existingUser);
     }
 
     @Test

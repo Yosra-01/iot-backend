@@ -10,6 +10,8 @@ import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.security.JwtUtil;
 import com.dxc.iotmonitor.security.TokenBlacklistService;
 import com.dxc.iotmonitor.security.UserDetailsImpl;
+import com.dxc.iotmonitor.polling.PollingIntervalRepository;
+import com.dxc.iotmonitor.polling.PollingIntervalService;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,8 @@ public class AuthService implements UserDetailsService{
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
     private final TokenBlacklistService tokenBlacklistService;
+    private final PollingIntervalRepository pollingIntervalRepository;
+    private final PollingIntervalService pollingIntervalService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -61,6 +65,10 @@ public class AuthService implements UserDetailsService{
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password."));
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid email or password.");
+        }
+
+        if (pollingIntervalRepository.findByUser(user).isEmpty()) {
+            pollingIntervalService.createDefault(user);
         }
 
         String token = jwtUtil.generateToken(user.getEmail());
