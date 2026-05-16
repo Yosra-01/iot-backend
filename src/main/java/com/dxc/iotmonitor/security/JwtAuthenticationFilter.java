@@ -22,6 +22,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final UserDetailsService userDetailsService; // programming to an interface principle
+    private final TokenBlacklistService tokenBlacklistService;
 
 
     @Override
@@ -39,6 +40,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         //removing the "Bearer " prefix
         String token = authHeader.substring(7);
+
+        if (tokenBlacklistService.isBlacklisted(token)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         if(jwtUtil.isTokenValid(token)){
             // extracts the email from the token
