@@ -1,7 +1,10 @@
 package com.dxc.iotmonitor.user.service;
 
+import com.dxc.iotmonitor.alert.repository.AlertRepository;
 import com.dxc.iotmonitor.exception.InvalidCredentialsException;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
+import com.dxc.iotmonitor.polling.PollingIntervalRepository;
+import com.dxc.iotmonitor.settings.repository.SettingsRepository;
 import com.dxc.iotmonitor.user.config.ProfilePictureProperties;
 import com.dxc.iotmonitor.user.dto.ProfileResponse;
 import com.dxc.iotmonitor.user.dto.UpdatePasswordRequest;
@@ -41,6 +44,15 @@ class UserServiceTest {
 
     @Mock
     private ProfilePictureProperties profilePictureProperties;
+
+    @Mock
+    private AlertRepository alertRepository;
+
+    @Mock
+    private SettingsRepository settingsRepository;
+
+    @Mock
+    private PollingIntervalRepository pollingIntervalRepository;
 
     @InjectMocks
     private UserService userService;
@@ -302,6 +314,9 @@ class UserServiceTest {
         userService.deleteUserByEmail(email);
 
         assertFalse(Files.exists(picture));
+        verify(alertRepository, times(1)).deleteByUser(user);
+        verify(settingsRepository, times(1)).deleteByUser(user);
+        verify(pollingIntervalRepository, times(1)).deleteByUser(user);
         verify(userRepository, times(1)).delete(user);
     }
 
@@ -317,6 +332,9 @@ class UserServiceTest {
         );
 
         assertEquals("User not found", exception.getMessage());
+        verify(alertRepository, never()).deleteByUser(any());
+        verify(settingsRepository, never()).deleteByUser(any());
+        verify(pollingIntervalRepository, never()).deleteByUser(any());
         verify(userRepository, never()).delete(any());
     }
 }

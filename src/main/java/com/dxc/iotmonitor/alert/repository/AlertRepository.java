@@ -14,4 +14,6 @@ public interface AlertRepository extends JpaRepository<AlertData, UUID> {
     List<AlertData> findByUserOrderByTriggeredAtDesc(User user);
 
     long countByUser(User user);
+
+    void deleteByUser(User user);
 }
