@@ -17,11 +17,11 @@ ENV TZ=Africa/Cairo
 COPY --from=build /app/target/*.jar app.jar
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
-# Fix Windows CRLF line endings; ensure entrypoint is executable before dropping to non-root.
-RUN sed -i 's/\r$//' /docker-entrypoint.sh \
+RUN mkdir -p /var/lib/iotmonitor/profile-pictures \
+  && sed -i 's/\r$//' /docker-entrypoint.sh \
   && chmod 755 /docker-entrypoint.sh \
   && addgroup -S spring && adduser -S spring -G spring \
-  && chown spring:spring /app/app.jar /docker-entrypoint.sh
+  && chown -R spring:spring /app /docker-entrypoint.sh /var/lib/iotmonitor
 
 USER spring:spring
 
