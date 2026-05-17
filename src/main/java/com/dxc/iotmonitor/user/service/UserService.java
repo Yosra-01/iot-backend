@@ -19,18 +19,14 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Stream;
 
 @RequiredArgsConstructor
 @Service
 public class UserService {
-
-    private static final String PROFILE_PICTURE_API_PATH = "/api/user/profile/picture";
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
@@ -42,21 +38,8 @@ public class UserService {
                 .findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         ProfileResponse response = userMapper.toResponse(user);
-        response.setProfilePicture(resolveProfilePictureApiPath(user.getUserId()));
+        response.setProfilePicture(user.getProfilePicture());
         return response;
-    }
-
-    /**
-     * API locator for the authenticated user's picture, or null when no file exists on disk.
-     */
-    private String resolveProfilePictureApiPath(UUID userId) {
-        try {
-            return findStoredPicture(userId)
-                    .map(ignored -> PROFILE_PICTURE_API_PATH)
-                    .orElse(null);
-        } catch (IOException e) {
-            return null;
-        }
     }
 
     public void updateProfilePicture(String email, MultipartFile file) throws IOException {
@@ -67,10 +50,16 @@ public class UserService {
         String extension = imageFileExtension(file.getContentType());
         Path root = profilePictureProperties.resolvedRoot();
         Files.createDirectories(root);
-        deleteStoredPictures(user.getUserId());
+
+        if (user.getProfilePicture() != null) {
+            Path oldFile = Paths.get(user.getProfilePicture());
+            Files.deleteIfExists(oldFile);
+        }
 
         Path dest = root.resolve(user.getUserId() + "." + extension);
         Files.copy(file.getInputStream(), dest, StandardCopyOption.REPLACE_EXISTING);
+        user.setProfilePicture(dest.toString());
+        userRepository.save(user);
     }
 
     public Resource getProfilePicture(String email) throws IOException {
@@ -78,8 +67,10 @@ public class UserService {
                 .findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Path filePath = findStoredPicture(user.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException("No profile picture found"));
+        if (user.getProfilePicture() == null) {
+            throw new ResourceNotFoundException("No profile picture found");
+        }
+        Path filePath = Paths.get(user.getProfilePicture());
 
         Resource resource = new UrlResource(filePath.toUri());
 
@@ -110,10 +101,12 @@ public class UserService {
         User user = userRepository
                 .findByEmailIgnoreCase(normalized)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-        try {
-            deleteStoredPictures(user.getUserId());
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to delete profile picture files", e);
+        if (user.getProfilePicture() != null) {
+            try {
+                Files.deleteIfExists(Paths.get(user.getProfilePicture()));
+            } catch (IOException e) {
+                throw new IllegalStateException("Failed to delete profile picture file", e);
+            }
         }
         userRepository.delete(user);
     }
@@ -137,34 +130,5 @@ public class UserService {
             case "png", "gif", "webp" -> subtype;
             default -> throw new IllegalArgumentException("Unsupported image type.");
         };
-    }
-
-    private void deleteStoredPictures(UUID userId) throws IOException {
-        Path root = profilePictureProperties.resolvedRoot();
-        if (!Files.isDirectory(root)) {
-            return;
-        }
-        String prefix = userId + ".";
-        try (Stream<Path> stream = Files.list(root)) {
-            List<Path> targets = stream
-                    .filter(p -> Files.isRegularFile(p) && p.getFileName().toString().startsWith(prefix))
-                    .toList();
-            for (Path p : targets) {
-                Files.deleteIfExists(p);
-            }
-        }
-    }
-
-    private Optional<Path> findStoredPicture(UUID userId) throws IOException {
-        Path root = profilePictureProperties.resolvedRoot();
-        if (!Files.isDirectory(root)) {
-            return Optional.empty();
-        }
-        String prefix = userId + ".";
-        try (Stream<Path> stream = Files.list(root)) {
-            return stream
-                    .filter(p -> Files.isRegularFile(p) && p.getFileName().toString().startsWith(prefix))
-                    .findFirst();
-        }
     }
 }

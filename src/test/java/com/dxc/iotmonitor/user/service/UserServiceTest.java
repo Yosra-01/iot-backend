@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -80,19 +81,16 @@ class UserServiceTest {
     }
 
     @Test
-    void getProfile_PictureOnDisk_ReturnsApiPath() throws IOException {
+    void getProfile_PictureOnDisk_ReturnsStoredPath() {
         String email = "john.doe@example.com";
-        UUID userId = UUID.randomUUID();
+        String storedPath = "uploads/profile-pictures/550e8400-e29b-41d4-a716-446655440000.jpeg";
 
         User user = new User();
         user.setEmail(email);
-        user.setUserId(userId);
+        user.setProfilePicture(storedPath);
 
         ProfileResponse expectedResponse = new ProfileResponse();
         expectedResponse.setEmail(email);
-
-        Files.createDirectories(tempProfilePicturesRoot);
-        Files.writeString(tempProfilePicturesRoot.resolve(userId + ".jpeg"), "x");
 
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
         when(userMapper.toResponse(user)).thenReturn(expectedResponse);
@@ -100,7 +98,7 @@ class UserServiceTest {
         ProfileResponse result = userService.getProfile(email);
 
         assertNotNull(result);
-        assertEquals("/api/user/profile/picture", result.getProfilePicture());
+        assertEquals(storedPath, result.getProfilePicture());
     }
 
     // ================================================================
@@ -111,6 +109,9 @@ class UserServiceTest {
     void updateProfilePicture_Success() throws IOException {
         // Arrange
         String email = "john.doe@example.com";
+        Path uploadsRoot = Paths.get("uploads", "profile-pictures").toAbsolutePath();
+        Files.createDirectories(uploadsRoot);
+        when(profilePictureProperties.resolvedRoot()).thenReturn(uploadsRoot);
 
         User user = new User();
         user.setEmail(email);
@@ -129,10 +130,12 @@ class UserServiceTest {
         // Act
         userService.updateProfilePicture(email, file);
 
-        // Assert — file on disk only; path is not persisted on User
-        Path expectedFile = tempProfilePicturesRoot.resolve(user.getUserId() + ".jpeg");
+        // Assert — file on disk and path persisted on User
+        Path expectedFile = uploadsRoot.resolve(user.getUserId() + ".jpeg");
         assertTrue(Files.isRegularFile(expectedFile));
-        verify(userRepository, never()).save(any());
+        verify(userRepository, times(1)).save(user);
+        assertNotNull(user.getProfilePicture());
+        assertTrue(user.getProfilePicture().contains("uploads"));
     }
 
     @Test
@@ -292,6 +295,7 @@ class UserServiceTest {
         Path picture = tempProfilePicturesRoot.resolve(userId + ".jpeg");
         Files.createDirectories(tempProfilePicturesRoot);
         Files.writeString(picture, "x");
+        user.setProfilePicture(picture.toString());
 
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
 
