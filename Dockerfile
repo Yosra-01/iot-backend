@@ -17,6 +17,9 @@ RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
 ENV SPRING_PROFILES_ACTIVE=docker
+ENV TZ=Africa/Cairo
 COPY --from=build /app/target/*.jar app.jar
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 EXPOSE 8080
-CMD ["java", "-jar", "app.jar"]
+ENTRYPOINT ["/docker-entrypoint.sh"]
