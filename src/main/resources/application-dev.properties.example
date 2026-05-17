@@ -11,3 +11,9 @@ jwt.secret=your_jwt_secret
 jwt.expiration=86400000
 
 server.port=8080
+
+spring.jackson.deserialization.accept-float-as-int=false
+
+scheduler.traffic.cron=0 */5 * * * *
+scheduler.airpollution.cron=0 */5 * * * *
+scheduler.streetlight.cron=0 */5 * * * *
