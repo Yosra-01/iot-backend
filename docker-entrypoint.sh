@@ -8,4 +8,4 @@ fi
 
 # DB password is set via SPRING_DATASOURCE_PASSWORD in docker-compose.yml (DB_PASSWORD).
 
-exec java -jar app.jar
+exec java -jar /app/app.jar
