@@ -10,11 +10,16 @@ import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorResponse;
 import com.dxc.iotmonitor.sensor.traffic.mapper.TrafficSensorMapper;
 import com.dxc.iotmonitor.sensor.traffic.model.TrafficSensorData;
 import com.dxc.iotmonitor.sensor.traffic.repository.TrafficSensorRepository;
+import com.dxc.iotmonitor.sensor.traffic.repository.TrafficSensorSpecification;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import com.dxc.iotmonitor.enums.CongestionLevel;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -128,5 +133,23 @@ public class TrafficSensorService {
         trafficSensorRepository.deleteAll();
 
         log.info("[TrafficSensorService][flush] flush completed: ok");
+    }
+
+    public Page<TrafficSensorResponse> getFilteredTrafficData(
+            String location, Integer minDensity, Integer maxDensity,
+            Float minSpeed, Float maxSpeed, CongestionLevel congestionLevel,
+            LocalDateTime timestampStart, LocalDateTime timestampEnd,
+            Pageable pageable) {
+
+        log.info("[TrafficSensorService] Fetching filtered & paginated traffic data");
+
+        Specification<TrafficSensorData> spec = TrafficSensorSpecification.filterBy(
+                location, minDensity, maxDensity, minSpeed, maxSpeed,
+                congestionLevel, timestampStart, timestampEnd
+        );
+
+        Page<TrafficSensorData> entities = trafficSensorRepository.findAll(spec, pageable);
+
+        return entities.map(trafficSensorMapper::toResponse);
     }
 }

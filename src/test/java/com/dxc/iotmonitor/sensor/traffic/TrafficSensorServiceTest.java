@@ -12,6 +12,11 @@ import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -98,26 +103,35 @@ class TrafficSensorServiceTest {
         verify(trafficSensorRepository, never()).save(any());
     }
 
+    // THE NEW TEST REPLACING getAll()
     @Test
-    void getAll_ShouldReturnList_WhenDataExists() {
-        TrafficSensorData entity = TrafficSensorData.builder()
+    void getFilteredTrafficData_ShouldReturnPaginatedResults() {
+        // Arrange
+        TrafficSensorData mockData = TrafficSensorData.builder()
                 .location("CAIRO_RING_ROAD")
-                .timestamp(LocalDateTime.now())
-                .trafficDensity(100)
-                .avgSpeed(50.0f)
-                .congestionLevel(CongestionLevel.LOW)
+                .trafficDensity(200)
                 .build();
+        Page<TrafficSensorData> mockPage = new PageImpl<>(List.of(mockData));
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // Tell Mockito to return our mockPage when the repository is called with ANY Specification
+        when(trafficSensorRepository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(mockPage);
 
         TrafficSensorResponse responseDto = TrafficSensorResponse.builder()
                 .id(UUID.randomUUID())
                 .build();
-
-        when(trafficSensorRepository.findAllByOrderByTimestampDesc()).thenReturn(List.of(entity));
         when(trafficSensorMapper.toResponse(any(TrafficSensorData.class))).thenReturn(responseDto);
 
-        List<TrafficSensorResponse> result = trafficSensorService.getAll();
+        // Act
+        Page<TrafficSensorResponse> result = trafficSensorService.getFilteredTrafficData(
+                "CAIRO", 100, 300, null, null, CongestionLevel.HIGH, null, null, pageable
+        );
 
-        assertEquals(1, result.size());
+        // Assert
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        verify(trafficSensorRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
     }
 
     @Test
