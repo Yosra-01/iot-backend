@@ -51,7 +51,7 @@ pipeline {
                     git url: 'https://github.com/faridakhaled05/iot-devops.git',
                         branch: 'main'
                 }
-                sh 'docker compose -f iot-devops/docker-compose.yml up -d --pull always'
+                sh 'docker-compose -f iot-devops/docker-compose.yml up -d --pull always'
             }
         }
     }
