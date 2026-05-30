@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE = "salmakhaledabdou/iot-backend"
+        IMAGE_TAG    = "v3.0"
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'mvn clean package -DskipTests'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh 'docker build -t $DOCKER_IMAGE:$IMAGE_TAG .'
+            }
+        }
+
+        stage('Docker Push') {
+            steps {
+                withCredentials([usernamePassword(
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
+                )]) {
+                    sh 'docker login -u $DOCKER_USER -p $DOCKER_PASS'
+                    sh 'docker push $DOCKER_IMAGE:$IMAGE_TAG'
+                }
+            }
+        }
+
+        stage('Deploy') {
+            steps {
+                dir('iot-devops') {
+                    git url: 'https://github.com/faridakhaled05/iot-devops.git',
+                        branch: 'main'
+                }
+                sh 'docker compose -f iot-devops/docker-compose.yml up -d --pull always'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Backend pipeline completed successfully.'
+        }
+        failure {
+            echo 'Backend pipeline failed. Check stage logs.'
+        }
+    }
+}
