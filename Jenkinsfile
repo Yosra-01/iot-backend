@@ -55,12 +55,12 @@ pipeline {
                     string(credentialsId: 'db-password', variable: 'DB_PASS'),
                     string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET')
                 ]) {
-                    sh '''
+                    sh """
                         mkdir -p iot-devops/secrets
-                        echo $DB_PASS > iot-devops/secrets/db_password.txt
-                        echo $JWT_SECRET > iot-devops/secrets/jwt_secret.txt
+                        printf '%s' "\$DB_PASS" > iot-devops/secrets/db_password.txt
+                        printf '%s' "\$JWT_SECRET" > iot-devops/secrets/jwt_secret.txt
                         docker-compose -f iot-devops/docker-compose.yml up -d --pull always
-                    '''
+                    """
                 }
             }
         }
