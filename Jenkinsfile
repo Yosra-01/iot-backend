@@ -51,7 +51,17 @@ pipeline {
                     git url: 'https://github.com/faridakhaled05/iot-devops.git',
                         branch: 'main'
                 }
-                sh 'docker-compose -f iot-devops/docker-compose.yml up -d --pull always'
+                withCredentials([
+                    string(credentialsId: 'db-password', variable: 'DB_PASS'),
+                    string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET')
+                ]) {
+                    sh '''
+                        mkdir -p iot-devops/secrets
+                        echo $DB_PASS > iot-devops/secrets/db_password.txt
+                        echo $JWT_SECRET > iot-devops/secrets/jwt_secret.txt
+                        docker-compose -f iot-devops/docker-compose.yml up -d --pull always
+                    '''
+                }
             }
         }
     }
