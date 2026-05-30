@@ -56,9 +56,10 @@ pipeline {
                     string(credentialsId: 'jwt-secret', variable: 'JWT_SECRET')
                 ]) {
                     sh """
-                        mkdir -p iot-devops/secrets
-                        printf '%s' "\$DB_PASS" > iot-devops/secrets/db_password.txt
-                        printf '%s' "\$JWT_SECRET" > iot-devops/secrets/jwt_secret.txt
+                        mkdir -p "\$WORKSPACE/iot-devops/secrets"
+                        printf '%s' "\$DB_PASS" > "\$WORKSPACE/iot-devops/secrets/db_password.txt"
+                        printf '%s' "\$JWT_SECRET" > "\$WORKSPACE/iot-devops/secrets/jwt_secret.txt"
+                        SECRETS_PATH="\$WORKSPACE/iot-devops/secrets" \
                         docker-compose -f iot-devops/docker-compose.yml up -d --pull always
                     """
                 }
