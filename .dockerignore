@@ -2,5 +2,5 @@ target/
 .git
 .idea
 *.iml
-.DS_Store
-src/main/resources/application-dev.properties
+.mvn/wrapper/maven-wrapper.jar
+**/application-dev.properties

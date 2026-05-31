@@ -8,7 +8,10 @@ import com.dxc.iotmonitor.exception.DuplicateEmailException;
 import com.dxc.iotmonitor.exception.InvalidCredentialsException;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.security.JwtUtil;
+import com.dxc.iotmonitor.security.TokenBlacklistService;
 import com.dxc.iotmonitor.security.UserDetailsImpl;
+import com.dxc.iotmonitor.polling.PollingIntervalRepository;
+import com.dxc.iotmonitor.polling.PollingIntervalService;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,19 +24,22 @@ import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
 @Service
-public class AuthService implements UserDetailsService{
+public class    AuthService implements UserDetailsService{
 
     private final AuthMapper authMapper;
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final TokenBlacklistService tokenBlacklistService;
+    private final PollingIntervalRepository pollingIntervalRepository;
+    private final PollingIntervalService pollingIntervalService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByEmailIgnoreCase(username);
-        if (user == null)
-            throw new UsernameNotFoundException("User not found.");
-        return new UserDetailsImpl(user);
+        return userRepository
+                .findByEmailIgnoreCase(username)
+                .map(UserDetailsImpl::new)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found."));
     }
 
     public AuthResponse createUser(SignupRequest request) {
@@ -54,13 +60,15 @@ public class AuthService implements UserDetailsService{
     }
 
     public AuthResponse login(LoginRequest request){
-        User user = userRepository.findByEmailIgnoreCase(request.getEmail());
-
-        if (user == null) {
-            throw new InvalidCredentialsException("Invalid email or password.");
-        }
+        User user = userRepository
+                .findByEmailIgnoreCase(request.getEmail())
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password."));
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid email or password.");
+        }
+
+        if (pollingIntervalRepository.findByUser(user).isEmpty()) {
+            pollingIntervalService.createDefault(user);
         }
 
         String token = jwtUtil.generateToken(user.getEmail());
@@ -72,5 +80,8 @@ public class AuthService implements UserDetailsService{
         return response;
     }
 
+    public void logout(String token) {
+        tokenBlacklistService.blacklist(token);
+    }
 
 }

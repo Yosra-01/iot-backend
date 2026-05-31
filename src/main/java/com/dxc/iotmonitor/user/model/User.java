@@ -1,11 +1,15 @@
 package com.dxc.iotmonitor.user.model;
 
+import com.dxc.iotmonitor.alert.AlertData;
+import com.dxc.iotmonitor.polling.PollingInterval;
+import com.dxc.iotmonitor.settings.model.Settings;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -29,7 +33,16 @@ public class User {
 
     private String password;
 
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(length = 500)
     private String profilePicture;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Settings> settings;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AlertData> alerts;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private PollingInterval pollingInterval;
 
 }
