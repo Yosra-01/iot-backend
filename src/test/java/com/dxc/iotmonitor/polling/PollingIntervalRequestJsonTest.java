@@ -23,7 +23,7 @@ class PollingIntervalRequestJsonTest {
                 """;
 
         assertThatThrownBy(() -> objectMapper.readValue(json, PollingIntervalRequest.class))
-                .hasMessageContaining("floating point");
+                .hasMessageContaining("Floating-point");
     }
 
     @Test
