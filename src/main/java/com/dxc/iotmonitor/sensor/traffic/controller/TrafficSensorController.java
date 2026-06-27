@@ -6,6 +6,7 @@ import com.dxc.iotmonitor.sensor.common.PageRequestBuilder;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficFilterParams;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorRequest;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorResponse;
+import com.dxc.iotmonitor.sensor.traffic.dto.TrafficStatsResponse;
 import com.dxc.iotmonitor.sensor.traffic.service.TrafficSensorHandler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,14 @@ public class TrafficSensorController {
         Page<TrafficSensorResponse> response = trafficSensorHandler.getFiltered(filters, pageable);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<TrafficStatsResponse> stats(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) String location) {
+        return ResponseEntity.ok(trafficSensorHandler.getStats(from, to, location));
     }
 
     @GetMapping("/latest")

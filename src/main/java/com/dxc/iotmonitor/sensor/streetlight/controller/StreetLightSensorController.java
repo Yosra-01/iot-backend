@@ -6,6 +6,7 @@ import com.dxc.iotmonitor.sensor.common.PageRequestBuilder;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightFilterParams;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorRequest;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorResponse;
+import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightStatsResponse;
 import com.dxc.iotmonitor.sensor.streetlight.service.StreetLightSensorHandler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,14 @@ public class StreetLightSensorController {
         Page<StreetLightSensorResponse> response = streetLightSensorHandler.getFiltered(filters, pageable);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<StreetLightStatsResponse> stats(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) String location) {
+        return ResponseEntity.ok(streetLightSensorHandler.getStats(from, to, location));
     }
 
     @GetMapping("/latest")

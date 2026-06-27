@@ -4,6 +4,7 @@ import com.dxc.iotmonitor.enums.PollutionLevel;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionFilterParams;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorRequest;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorResponse;
+import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionStatsResponse;
 import com.dxc.iotmonitor.sensor.airpollution.service.AirPollutionSensorHandler;
 import com.dxc.iotmonitor.sensor.common.AuthenticatedUserResolver;
 import com.dxc.iotmonitor.sensor.common.PageRequestBuilder;
@@ -65,6 +66,14 @@ public class AirPollutionSensorController {
         Page<AirPollutionSensorResponse> response = airPollutionSensorHandler.getFiltered(filters, pageable);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/stats")
+    public ResponseEntity<AirPollutionStatsResponse> stats(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to,
+            @RequestParam(required = false) String location) {
+        return ResponseEntity.ok(airPollutionSensorHandler.getStats(from, to, location));
     }
 
     @GetMapping("/latest")
