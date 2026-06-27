@@ -1,65 +1,76 @@
 package com.dxc.iotmonitor.sensor.streetlight.controller;
 
+import com.dxc.iotmonitor.enums.LightStatus;
+import com.dxc.iotmonitor.sensor.common.AuthenticatedUserResolver;
+import com.dxc.iotmonitor.sensor.common.PageRequestBuilder;
+import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightFilterParams;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorRequest;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorResponse;
-import com.dxc.iotmonitor.sensor.streetlight.service.StreetLightSensorService;
-import com.dxc.iotmonitor.user.model.User;
-import com.dxc.iotmonitor.user.repository.UserRepository;
+import com.dxc.iotmonitor.sensor.streetlight.service.StreetLightSensorHandler;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AnonymousAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
 
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/sensors/street-lights")
 public class StreetLightSensorController {
 
-    private final StreetLightSensorService streetLightSensorService;
-    private final UserRepository userRepository;
+    private final StreetLightSensorHandler streetLightSensorHandler;
+    private final AuthenticatedUserResolver authenticatedUserResolver;
 
     @PostMapping
     public ResponseEntity<StreetLightSensorResponse> create(
             @Valid @RequestBody StreetLightSensorRequest body) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Optional<User> user = (auth != null && auth.isAuthenticated()
-                && !(auth instanceof AnonymousAuthenticationToken))
-                ? userRepository.findByEmailIgnoreCase(auth.getName())
-                : Optional.empty();
-        return ResponseEntity.status(HttpStatus.CREATED).body(streetLightSensorService.save(body, user));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(streetLightSensorHandler.save(body, authenticatedUserResolver.current()));
     }
 
     @GetMapping
-    public ResponseEntity<List<StreetLightSensorResponse>> listAll() {
-        return ResponseEntity.ok(streetLightSensorService.getAll());
+    public ResponseEntity<Page<StreetLightSensorResponse>> listAll(
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) Integer minBrightness,
+            @RequestParam(required = false) Integer maxBrightness,
+            @RequestParam(required = false) Float minPower,
+            @RequestParam(required = false) Float maxPower,
+            @RequestParam(required = false) LightStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timestampStart,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime timestampEnd,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "timestamp") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDir) {
+
+        StreetLightFilterParams filters = new StreetLightFilterParams(
+                location, minBrightness, maxBrightness, minPower, maxPower,
+                status, timestampStart, timestampEnd
+        );
+        Pageable pageable = PageRequestBuilder.from(page, size, sortBy, sortDir);
+        Page<StreetLightSensorResponse> response = streetLightSensorHandler.getFiltered(filters, pageable);
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/latest")
     public ResponseEntity<StreetLightSensorResponse> getLatest() {
-        return ResponseEntity.ok(streetLightSensorService.getLatest());
+        return ResponseEntity.ok(streetLightSensorHandler.getLatest());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<StreetLightSensorResponse> getById(@PathVariable String id) {
-        return ResponseEntity.ok(streetLightSensorService.getById(id));
+        return ResponseEntity.ok(streetLightSensorHandler.getById(id));
     }
 
     @DeleteMapping("/flush")
     public ResponseEntity<String> flush() {
-        streetLightSensorService.flush();
+        streetLightSensorHandler.flush();
         return ResponseEntity.ok("Street light sensor data flushed successfully.");
     }
 }
