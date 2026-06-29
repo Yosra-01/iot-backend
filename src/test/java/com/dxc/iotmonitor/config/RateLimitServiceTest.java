@@ -65,4 +65,30 @@ class RateLimitServiceTest {
                     "Unknown endpoint should always be allowed");
         }
     }
+
+    @Test
+    void profile_shouldAllowFirst10Requests() {
+        for (int i = 0; i < 10; i++) {
+            assertTrue(rateLimitService.tryConsumeProfile("user@example.com"),
+                    "Request " + (i + 1) + " should be allowed");
+        }
+    }
+
+    @Test
+    void profile_shouldBlockAfter10Requests() {
+        for (int i = 0; i < 10; i++) {
+            rateLimitService.tryConsumeProfile("user@example.com");
+        }
+        assertFalse(rateLimitService.tryConsumeProfile("user@example.com"),
+                "11th request should be blocked");
+    }
+
+    @Test
+    void profile_differentEmails_shouldHaveIndependentBuckets() {
+        for (int i = 0; i < 10; i++) {
+            rateLimitService.tryConsumeProfile("user1@example.com");
+        }
+        assertTrue(rateLimitService.tryConsumeProfile("user2@example.com"),
+                "Different email should not be affected");
+    }
 }
