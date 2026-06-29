@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -217,5 +218,168 @@ class AlertServiceTest {
                 UUID.randomUUID());
 
         verify(alertRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void checkAndTrigger_belowBreach_savesAlert() {
+        Settings setting = new Settings();
+        setting.setType(SensorType.TRAFFIC);
+        setting.setMetric(Metric.TRAFFIC_DENSITY);
+        setting.setAlertType(AlertType.BELOW);
+        setting.setThresholdValue(200.0f);
+
+        when(settingsRepository.findByUser(user)).thenReturn(List.of(setting));
+
+        alertService.checkAndTrigger(
+                SensorType.TRAFFIC,
+                Map.of(Metric.TRAFFIC_DENSITY, 100.0f),
+                "CAIRO_RING_ROAD",
+                user,
+                UUID.randomUUID());
+
+        verify(alertRepository, times(1)).saveAll(anyList());
+    }
+
+    @Test
+    void checkAndTrigger_belowNoBreach_valueEqualsThreshold_doesNotSave() {
+        Settings setting = new Settings();
+        setting.setType(SensorType.TRAFFIC);
+        setting.setMetric(Metric.TRAFFIC_DENSITY);
+        setting.setAlertType(AlertType.BELOW);
+        setting.setThresholdValue(200.0f);
+
+        when(settingsRepository.findByUser(user)).thenReturn(List.of(setting));
+
+        alertService.checkAndTrigger(
+                SensorType.TRAFFIC,
+                Map.of(Metric.TRAFFIC_DENSITY, 200.0f),
+                "CAIRO_RING_ROAD",
+                user,
+                UUID.randomUUID());
+
+        verify(alertRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void checkAndTrigger_aboveBoundary_valueEqualsThreshold_doesNotSave() {
+        Settings setting = new Settings();
+        setting.setType(SensorType.TRAFFIC);
+        setting.setMetric(Metric.TRAFFIC_DENSITY);
+        setting.setAlertType(AlertType.ABOVE);
+        setting.setThresholdValue(400.0f);
+
+        when(settingsRepository.findByUser(user)).thenReturn(List.of(setting));
+
+        alertService.checkAndTrigger(
+                SensorType.TRAFFIC,
+                Map.of(Metric.TRAFFIC_DENSITY, 400.0f),
+                "CAIRO_RING_ROAD",
+                user,
+                UUID.randomUUID());
+
+        verify(alertRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void checkAndTrigger_typeMismatch_doesNotSave() {
+        Settings setting = new Settings();
+        setting.setType(SensorType.AIR_POLLUTION);
+        setting.setMetric(Metric.CO);
+        setting.setAlertType(AlertType.ABOVE);
+        setting.setThresholdValue(30.0f);
+
+        when(settingsRepository.findByUser(user)).thenReturn(List.of(setting));
+
+        alertService.checkAndTrigger(
+                SensorType.TRAFFIC, // different type
+                Map.of(Metric.CO, 50.0f),
+                "CAIRO_RING_ROAD",
+                user,
+                UUID.randomUUID());
+
+        verify(alertRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void checkAndTrigger_metricNotInValues_doesNotSave() {
+        Settings setting = new Settings();
+        setting.setType(SensorType.TRAFFIC);
+        setting.setMetric(Metric.TRAFFIC_DENSITY);
+        setting.setAlertType(AlertType.ABOVE);
+        setting.setThresholdValue(400.0f);
+
+        when(settingsRepository.findByUser(user)).thenReturn(List.of(setting));
+
+        alertService.checkAndTrigger(
+                SensorType.TRAFFIC,
+                Map.of(Metric.AVG_SPEED, 60.0f), // TRAFFIC_DENSITY not in map
+                "CAIRO_RING_ROAD",
+                user,
+                UUID.randomUUID());
+
+        verify(alertRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void checkAndTrigger_nullValueInMap_doesNotSave() {
+        Settings setting = new Settings();
+        setting.setType(SensorType.TRAFFIC);
+        setting.setMetric(Metric.TRAFFIC_DENSITY);
+        setting.setAlertType(AlertType.ABOVE);
+        setting.setThresholdValue(400.0f);
+
+        when(settingsRepository.findByUser(user)).thenReturn(List.of(setting));
+
+        Map<Metric, Float> values = new HashMap<>();
+        values.put(Metric.TRAFFIC_DENSITY, null);
+
+        alertService.checkAndTrigger(
+                SensorType.TRAFFIC,
+                values,
+                "CAIRO_RING_ROAD",
+                user,
+                UUID.randomUUID());
+
+        verify(alertRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void checkAndTrigger_emptySettings_doesNotSave() {
+        when(settingsRepository.findByUser(user)).thenReturn(List.of());
+
+        alertService.checkAndTrigger(
+                SensorType.TRAFFIC,
+                Map.of(Metric.TRAFFIC_DENSITY, 480.0f),
+                "CAIRO_RING_ROAD",
+                user,
+                UUID.randomUUID());
+
+        verify(alertRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void checkAndTrigger_multipleSettingsPartialBreach_savesOnlyBreaching() {
+        Settings settingBreach = new Settings();
+        settingBreach.setType(SensorType.TRAFFIC);
+        settingBreach.setMetric(Metric.TRAFFIC_DENSITY);
+        settingBreach.setAlertType(AlertType.ABOVE);
+        settingBreach.setThresholdValue(400.0f);
+
+        Settings settingNoBreach = new Settings();
+        settingNoBreach.setType(SensorType.TRAFFIC);
+        settingNoBreach.setMetric(Metric.TRAFFIC_DENSITY);
+        settingNoBreach.setAlertType(AlertType.ABOVE);
+        settingNoBreach.setThresholdValue(500.0f);
+
+        when(settingsRepository.findByUser(user)).thenReturn(List.of(settingBreach, settingNoBreach));
+
+        alertService.checkAndTrigger(
+                SensorType.TRAFFIC,
+                Map.of(Metric.TRAFFIC_DENSITY, 480.0f), // breaches 400, does not breach 500
+                "CAIRO_RING_ROAD",
+                user,
+                UUID.randomUUID());
+
+        verify(alertRepository, times(1)).saveAll(anyList());
     }
 }
