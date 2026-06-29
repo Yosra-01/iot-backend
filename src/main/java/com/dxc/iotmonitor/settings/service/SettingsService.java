@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ public class SettingsService {
     private final SettingsRepository settingsRepository;
     private final SettingsMapper settingsMapper;
 
+    @Transactional
     public List<SettingsResponse> upsert(List<SettingsRequest> requests, User user) {
         for (SettingsRequest request : requests) {
             validateMetricForSensorType(request.getType(), request.getMetric());

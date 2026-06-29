@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -195,7 +196,7 @@ class AlertServiceTest {
                 user,
                 UUID.randomUUID());
 
-        verify(alertRepository, times(1)).save(any(AlertData.class));
+        verify(alertRepository, times(1)).saveAll(anyList());
     }
 
     @Test
@@ -215,6 +216,6 @@ class AlertServiceTest {
                 user,
                 UUID.randomUUID());
 
-        verify(alertRepository, never()).save(any(AlertData.class));
+        verify(alertRepository, never()).saveAll(anyList());
     }
 }

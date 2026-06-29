@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "traffic_sensors_data")
+@Table(name = "traffic_sensors_data", indexes = @Index(name = "idx_traffic_loc_ts", columnList = "location,timestamp"))
 @Check(constraints = "traffic_density >= 0 AND traffic_density <= 500")
 @Check(constraints = "avg_speed >= 0 AND avg_speed <= 120")
 @Getter

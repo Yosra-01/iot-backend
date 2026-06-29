@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -66,9 +68,11 @@ public class AlertService {
         log.info("All alerts flushed.");
     }
 
+    @Transactional
     public void checkAndTrigger(SensorType type, Map<Metric, Float> values, String location, User user, UUID readingId) {
         log.info("checkAndTrigger called — type={} location={} user={}", type, location, user.getUserId());
         List<Settings> settings = settingsRepository.findByUser(user);
+        List<AlertData> alerts = new ArrayList<>();
         for (Settings setting : settings) {
             if (setting.getType() != type) {
                 continue;
@@ -98,7 +102,7 @@ public class AlertService {
                         .alertType(setting.getAlertType())
                         .readingId(readingId)
                         .build();
-                alertRepository.save(alert);
+                alerts.add(alert);
                 log.info(
                         "ALERT TRIGGERED — type={} location={} metric={} value={} threshold={} alertType={}",
                         type,
@@ -108,6 +112,9 @@ public class AlertService {
                         setting.getThresholdValue(),
                         setting.getAlertType());
             }
+        }
+        if (!alerts.isEmpty()) {
+            alertRepository.saveAll(alerts);
         }
     }
 }
