@@ -1,6 +1,7 @@
 package com.dxc.iotmonitor.alert.service;
 
 import com.dxc.iotmonitor.alert.AlertData;
+import com.dxc.iotmonitor.alert.dto.AlertFilterParams;
 import com.dxc.iotmonitor.alert.dto.response.AlertResponse;
 import com.dxc.iotmonitor.alert.mapper.AlertMapper;
 import com.dxc.iotmonitor.alert.repository.AlertRepository;
@@ -13,10 +14,14 @@ import com.dxc.iotmonitor.settings.repository.SettingsRepository;
 import com.dxc.iotmonitor.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -30,11 +35,13 @@ public class AlertService {
     private final AlertRepository alertRepository;
     private final AlertMapper alertMapper;
     private final SettingsRepository settingsRepository;
+    private final AlertSpecBuilder alertSpecBuilder;
 
-    public List<AlertResponse> findAll(User user) {
-        return alertRepository.findByUserOrderByTriggeredAtDesc(user).stream()
-                .map(alertMapper::toResponse)
-                .toList();
+    public Page<AlertResponse> findFiltered(AlertFilterParams filters, Pageable pageable, User user) {
+        Specification<AlertData> userSpec = (root, query, cb) -> cb.equal(root.get("user"), user);
+        Specification<AlertData> filterSpec = alertSpecBuilder.build(filters);
+        Page<AlertData> entities = alertRepository.findAll(userSpec.and(filterSpec), pageable);
+        return entities.map(alertMapper::toResponse);
     }
 
     public AlertResponse findById(UUID id, User user) {
@@ -44,8 +51,10 @@ public class AlertService {
         return alertMapper.toResponse(entity);
     }
 
-    public long count(User user) {
-        return alertRepository.countByUser(user);
+    public long count(AlertFilterParams filters, User user) {
+        Specification<AlertData> userSpec = (root, query, cb) -> cb.equal(root.get("user"), user);
+        Specification<AlertData> filterSpec = alertSpecBuilder.build(filters);
+        return alertRepository.count(userSpec.and(filterSpec));
     }
 
     public void deleteById(UUID id, User user) {
@@ -66,6 +75,18 @@ public class AlertService {
     public void flush() {
         alertRepository.deleteAll();
         log.info("All alerts flushed.");
+    }
+
+    @Transactional
+    public void markAsRead(UUID id, User user) {
+        AlertData alert = alertRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Alert not found."));
+        assertOwnedByUser(alert, user, id);
+        if (alert.getReadAt() == null) {
+            alert.setReadAt(LocalDateTime.now());
+            alertRepository.save(alert);
+            log.info("Alert marked as read: id={} by user={}", id, user.getUserId());
+        }
     }
 
     @Transactional

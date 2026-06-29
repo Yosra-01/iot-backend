@@ -4,6 +4,7 @@ import com.dxc.iotmonitor.alert.AlertData;
 import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.user.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,11 +14,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface AlertRepository extends JpaRepository<AlertData, UUID> {
+public interface AlertRepository extends JpaRepository<AlertData, UUID>, JpaSpecificationExecutor<AlertData> {
 
+    @Deprecated
     List<AlertData> findByUserOrderByTriggeredAtDesc(User user);
 
     long countByUser(User user);
+
+    long countByUserAndReadAtIsNull(User user);
 
     @Query("SELECT COUNT(a) FROM AlertData a " +
            "WHERE a.sensorType = :sensorType " +

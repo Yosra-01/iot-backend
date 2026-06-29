@@ -1,6 +1,7 @@
 package com.dxc.iotmonitor.alert.service;
 
 import com.dxc.iotmonitor.alert.AlertData;
+import com.dxc.iotmonitor.alert.dto.AlertFilterParams;
 import com.dxc.iotmonitor.alert.dto.response.AlertResponse;
 import com.dxc.iotmonitor.alert.mapper.AlertMapper;
 import com.dxc.iotmonitor.alert.repository.AlertRepository;
@@ -16,8 +17,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,10 +33,12 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -47,6 +56,9 @@ class AlertServiceTest {
     @Mock
     private SettingsRepository settingsRepository;
 
+    @Mock
+    private AlertSpecBuilder alertSpecBuilder;
+
     @InjectMocks
     private AlertService alertService;
 
@@ -59,18 +71,26 @@ class AlertServiceTest {
             .build();
 
     @Test
-    void findAll_returnsMappedList() {
+    void findFiltered_returnsPaginatedResults() {
+        AlertFilterParams filters = new AlertFilterParams(
+                SensorType.TRAFFIC, null, null, null, null, null, Boolean.FALSE);
+        Pageable pageable = PageRequest.of(0, 10);
+
         AlertData alertData = new AlertData();
         alertData.setId(UUID.randomUUID());
+        Page<AlertData> mockPage = new PageImpl<>(List.of(alertData));
         AlertResponse response = new AlertResponse();
         response.setId(alertData.getId());
 
-        when(alertRepository.findByUserOrderByTriggeredAtDesc(user)).thenReturn(List.of(alertData));
+        Specification<AlertData> mockSpec = (root, query, cb) -> cb.conjunction();
+        when(alertSpecBuilder.build(any(AlertFilterParams.class))).thenReturn(mockSpec);
+        when(alertRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(mockPage);
         when(alertMapper.toResponse(alertData)).thenReturn(response);
 
-        List<AlertResponse> result = alertService.findAll(user);
+        Page<AlertResponse> result = alertService.findFiltered(filters, pageable, user);
 
-        assertEquals(1, result.size());
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
     }
 
     @Test
@@ -124,10 +144,17 @@ class AlertServiceTest {
     }
 
     @Test
-    void count_returnsCount() {
-        when(alertRepository.countByUser(user)).thenReturn(5L);
+    void count_withFilters_returnsScopedCount() {
+        AlertFilterParams filters = new AlertFilterParams(
+                null, null, null, null, null, null, Boolean.FALSE);
 
-        assertEquals(5L, alertService.count(user));
+        Specification<AlertData> mockSpec = (root, query, cb) -> cb.conjunction();
+        when(alertSpecBuilder.build(any(AlertFilterParams.class))).thenReturn(mockSpec);
+        when(alertRepository.count(any(Specification.class))).thenReturn(5L);
+
+        long result = alertService.count(filters, user);
+
+        assertEquals(5L, result);
     }
 
     @Test
@@ -176,6 +203,75 @@ class AlertServiceTest {
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
                 () -> alertService.deleteById(UUID.randomUUID(), user));
+
+        assertEquals("Alert not found.", ex.getMessage());
+    }
+
+    @Test
+    void markAsRead_unread_setsReadAt() {
+        UUID id = UUID.randomUUID();
+        AlertData alertData = new AlertData();
+        alertData.setId(id);
+        alertData.setUser(user);
+        alertData.setReadAt(null);
+
+        when(alertRepository.findById(id)).thenReturn(Optional.of(alertData));
+
+        alertService.markAsRead(id, user);
+
+        assertNotNull(alertData.getReadAt());
+        verify(alertRepository, times(1)).save(alertData);
+    }
+
+    @Test
+    void markAsRead_alreadyRead_isIdempotent() {
+        UUID id = UUID.randomUUID();
+        LocalDateTime originalReadAt = LocalDateTime.of(2026, 6, 1, 10, 0, 0);
+        AlertData alertData = new AlertData();
+        alertData.setId(id);
+        alertData.setUser(user);
+        alertData.setReadAt(originalReadAt);
+
+        when(alertRepository.findById(id)).thenReturn(Optional.of(alertData));
+
+        alertService.markAsRead(id, user);
+
+        assertEquals(originalReadAt, alertData.getReadAt());
+        verify(alertRepository, never()).save(any(AlertData.class));
+    }
+
+    @Test
+    void markAsRead_notOwned_throwsAccessDeniedException() {
+        User otherUser = User.builder()
+                .userId(UUID.randomUUID())
+                .email("other@example.com")
+                .firstName("O")
+                .lastName("Ther")
+                .password("x")
+                .build();
+
+        UUID id = UUID.randomUUID();
+        AlertData alertData = new AlertData();
+        alertData.setId(id);
+        alertData.setUser(otherUser);
+
+        when(alertRepository.findById(id)).thenReturn(Optional.of(alertData));
+
+        AccessDeniedException ex = assertThrows(
+                AccessDeniedException.class,
+                () -> alertService.markAsRead(id, user));
+
+        assertTrue(ex.getMessage().contains("permission"));
+        verify(alertRepository, never()).save(any(AlertData.class));
+    }
+
+    @Test
+    void markAsRead_notFound_throwsResourceNotFoundException() {
+        when(alertRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
+
+        ResourceNotFoundException ex = assertThrows(
+                ResourceNotFoundException.class,
+                () -> alertService.markAsRead(UUID.randomUUID(), user));
 
         assertEquals("Alert not found.", ex.getMessage());
     }
@@ -291,7 +387,7 @@ class AlertServiceTest {
         when(settingsRepository.findByUser(user)).thenReturn(List.of(setting));
 
         alertService.checkAndTrigger(
-                SensorType.TRAFFIC, // different type
+                SensorType.TRAFFIC,
                 Map.of(Metric.CO, 50.0f),
                 "CAIRO_RING_ROAD",
                 user,
@@ -312,7 +408,7 @@ class AlertServiceTest {
 
         alertService.checkAndTrigger(
                 SensorType.TRAFFIC,
-                Map.of(Metric.AVG_SPEED, 60.0f), // TRAFFIC_DENSITY not in map
+                Map.of(Metric.AVG_SPEED, 60.0f),
                 "CAIRO_RING_ROAD",
                 user,
                 UUID.randomUUID());
@@ -375,7 +471,7 @@ class AlertServiceTest {
 
         alertService.checkAndTrigger(
                 SensorType.TRAFFIC,
-                Map.of(Metric.TRAFFIC_DENSITY, 480.0f), // breaches 400, does not breach 500
+                Map.of(Metric.TRAFFIC_DENSITY, 480.0f),
                 "CAIRO_RING_ROAD",
                 user,
                 UUID.randomUUID());

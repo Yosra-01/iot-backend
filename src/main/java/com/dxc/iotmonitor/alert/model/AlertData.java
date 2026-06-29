@@ -69,8 +69,12 @@ public class AlertData {
 
     private UUID readingId;
 
+    private LocalDateTime readAt;
+
     @PrePersist
     protected void setTriggeredAtOnPersist() {
-        triggeredAt = LocalDateTime.now();
+        if (triggeredAt == null) {
+            triggeredAt = LocalDateTime.now();
+        }
     }
 }
