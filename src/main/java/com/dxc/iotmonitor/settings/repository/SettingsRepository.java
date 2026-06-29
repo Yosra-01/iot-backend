@@ -23,4 +23,6 @@ public interface SettingsRepository extends JpaRepository<Settings, UUID> {
             Metric metric,
             AlertType alertType
     );
+
+    void deleteByUser(User user);
 }

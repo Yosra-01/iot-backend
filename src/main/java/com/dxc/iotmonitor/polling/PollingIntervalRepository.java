@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface PollingIntervalRepository extends JpaRepository<PollingInterval, UUID> {
 
     Optional<PollingInterval> findByUser(User user);
+
+    void deleteByUser(User user);
 }

@@ -23,6 +23,8 @@ public interface AlertRepository extends JpaRepository<AlertData, UUID>, JpaSpec
 
     long countByUserAndReadAtIsNull(User user);
 
+    void deleteByUser(User user);
+
     @Query("SELECT COUNT(a) FROM AlertData a " +
            "WHERE a.sensorType = :sensorType " +
            "AND (:location IS NULL OR a.location = :location) " +

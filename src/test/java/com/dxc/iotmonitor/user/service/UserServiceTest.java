@@ -2,6 +2,9 @@ package com.dxc.iotmonitor.user.service;
 
 import com.dxc.iotmonitor.exception.InvalidCredentialsException;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
+import com.dxc.iotmonitor.alert.repository.AlertRepository;
+import com.dxc.iotmonitor.polling.PollingIntervalRepository;
+import com.dxc.iotmonitor.settings.repository.SettingsRepository;
 import com.dxc.iotmonitor.user.config.ProfilePictureProperties;
 import com.dxc.iotmonitor.user.dto.ProfileResponse;
 import com.dxc.iotmonitor.user.dto.UpdatePasswordRequest;
@@ -41,6 +44,15 @@ class UserServiceTest {
 
     @Mock
     private ProfilePictureProperties profilePictureProperties;
+
+    @Mock
+    private AlertRepository alertRepository;
+
+    @Mock
+    private SettingsRepository settingsRepository;
+
+    @Mock
+    private PollingIntervalRepository pollingIntervalRepository;
 
     @InjectMocks
     private UserService userService;

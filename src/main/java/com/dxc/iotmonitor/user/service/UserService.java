@@ -1,7 +1,10 @@
 package com.dxc.iotmonitor.user.service;
 
+import com.dxc.iotmonitor.alert.repository.AlertRepository;
 import com.dxc.iotmonitor.exception.InvalidCredentialsException;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
+import com.dxc.iotmonitor.polling.PollingIntervalRepository;
+import com.dxc.iotmonitor.settings.repository.SettingsRepository;
 import com.dxc.iotmonitor.user.config.ProfilePictureProperties;
 import com.dxc.iotmonitor.user.dto.ProfileResponse;
 import com.dxc.iotmonitor.user.dto.UpdatePasswordRequest;
@@ -32,6 +35,9 @@ public class UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
     private final ProfilePictureProperties profilePictureProperties;
+    private final AlertRepository alertRepository;
+    private final SettingsRepository settingsRepository;
+    private final PollingIntervalRepository pollingIntervalRepository;
 
     public ProfileResponse getProfile(String email) {
         User user = userRepository
@@ -108,6 +114,9 @@ public class UserService {
                 throw new IllegalStateException("Failed to delete profile picture file", e);
             }
         }
+        pollingIntervalRepository.deleteByUser(user);
+        settingsRepository.deleteByUser(user);
+        alertRepository.deleteByUser(user);
         userRepository.delete(user);
     }
 
