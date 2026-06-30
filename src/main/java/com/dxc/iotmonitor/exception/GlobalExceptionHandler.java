@@ -15,10 +15,12 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -217,6 +219,7 @@ public class GlobalExceptionHandler {
     //500 Internal Error
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGenericException(Exception e) {
+        log.error("Unhandled exception caught by GlobalExceptionHandler", e);
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(), // 500
                 "Internal Server Error",

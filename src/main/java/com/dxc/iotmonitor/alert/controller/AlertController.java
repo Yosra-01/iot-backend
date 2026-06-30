@@ -7,15 +7,14 @@ import com.dxc.iotmonitor.enums.AlertType;
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
+import com.dxc.iotmonitor.sensor.common.AuthenticatedUserResolver;
 import com.dxc.iotmonitor.sensor.common.PageRequestBuilder;
 import com.dxc.iotmonitor.user.model.User;
-import com.dxc.iotmonitor.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -34,7 +33,7 @@ import java.util.UUID;
 public class AlertController {
 
     private final AlertService alertService;
-    private final UserRepository userRepository;
+    private final AuthenticatedUserResolver authenticatedUserResolver;
 
     @GetMapping
     public ResponseEntity<Page<AlertResponse>> findAll(
@@ -50,7 +49,8 @@ public class AlertController {
             @RequestParam(defaultValue = "triggeredAt") String sortBy,
             @RequestParam(defaultValue = "desc") String sortDir) {
 
-        User user = resolveUser();
+        User user = authenticatedUserResolver.current()
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         AlertFilterParams filters = new AlertFilterParams(
                 sensorType, metric, alertType, location, triggeredStart, triggeredEnd, read);
         Pageable pageable = PageRequestBuilder.from(page, size, sortBy, sortDir);
@@ -67,7 +67,8 @@ public class AlertController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime triggeredEnd,
             @RequestParam(required = false) Boolean read) {
 
-        User user = resolveUser();
+        User user = authenticatedUserResolver.current()
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         AlertFilterParams filters = new AlertFilterParams(
                 sensorType, metric, alertType, location, triggeredStart, triggeredEnd, read);
         return ResponseEntity.ok(Map.of("count", alertService.count(filters, user)));
@@ -75,13 +76,15 @@ public class AlertController {
 
     @GetMapping("/{id}")
     public ResponseEntity<AlertResponse> findById(@PathVariable UUID id) {
-        User user = resolveUser();
+        User user = authenticatedUserResolver.current()
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         return ResponseEntity.ok(alertService.findById(id, user));
     }
 
     @PatchMapping("/{id}/read")
     public ResponseEntity<Map<String, String>> markAsRead(@PathVariable UUID id) {
-        User user = resolveUser();
+        User user = authenticatedUserResolver.current()
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         alertService.markAsRead(id, user);
         return ResponseEntity.ok(Map.of("message", "Alert marked as read."));
     }
@@ -94,14 +97,9 @@ public class AlertController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteById(@PathVariable UUID id) {
-        User user = resolveUser();
+        User user = authenticatedUserResolver.current()
+                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
         alertService.deleteById(id, user);
         return ResponseEntity.ok(Map.of("message", "Alert dismissed successfully."));
-    }
-
-    private User resolveUser() {
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
     }
 }

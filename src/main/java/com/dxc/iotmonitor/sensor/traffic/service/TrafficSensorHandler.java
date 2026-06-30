@@ -7,6 +7,7 @@ import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.sensor.common.AlertFanOut;
 import com.dxc.iotmonitor.sensor.common.SensorHandler;
+import com.dxc.iotmonitor.sensor.common.SpecBuilder;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficFilterParams;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorRequest;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorResponse;
@@ -39,7 +40,7 @@ public class TrafficSensorHandler implements SensorHandler<TrafficSensorData, Tr
     private final TrafficSensorMapper trafficSensorMapper;
     private final TrafficValidator trafficValidator;
     private final TrafficReadingsExtractor trafficReadingsExtractor;
-    private final TrafficSpecBuilder trafficSpecBuilder;
+    private final SpecBuilder<TrafficSensorData, TrafficFilterParams> trafficSpecBuilder;
     private final AlertFanOut alertFanOut;
     private final AlertRepository alertRepository;
 

@@ -11,6 +11,7 @@ import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.settings.model.Settings;
 import com.dxc.iotmonitor.settings.repository.SettingsRepository;
+import com.dxc.iotmonitor.sensor.common.SpecBuilder;
 import com.dxc.iotmonitor.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,7 @@ public class AlertService {
     private final AlertRepository alertRepository;
     private final AlertMapper alertMapper;
     private final SettingsRepository settingsRepository;
-    private final AlertSpecBuilder alertSpecBuilder;
+    private final SpecBuilder<AlertData, AlertFilterParams> alertSpecBuilder;
 
     public Page<AlertResponse> findFiltered(AlertFilterParams filters, Pageable pageable, User user) {
         Specification<AlertData> userSpec = (root, query, cb) -> cb.equal(root.get("user"), user);
@@ -62,19 +63,19 @@ public class AlertService {
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found."));
         assertOwnedByUser(entity, user, id);
         alertRepository.deleteById(id);
-        log.info("Alert dismissed: id={} by user={}", id, user.getUserId());
+        log.info("[AlertService][deleteById] Alert dismissed: id={} by user={}", id, user.getUserId());
     }
 
     private void assertOwnedByUser(AlertData alert, User user, UUID id) {
         if (!alert.getUser().getUserId().equals(user.getUserId())) {
-            log.warn("Alert access denied: user {} does not own alert {}", user.getUserId(), id);
+            log.warn("[AlertService][assertOwnedByUser] Alert access denied: user {} does not own alert {}", user.getUserId(), id);
             throw new AccessDeniedException("You do not have permission to access this alert.");
         }
     }
 
     public void flush() {
         alertRepository.deleteAll();
-        log.info("All alerts flushed.");
+        log.info("[AlertService][flush] All alerts flushed.");
     }
 
     @Transactional
@@ -85,13 +86,13 @@ public class AlertService {
         if (alert.getReadAt() == null) {
             alert.setReadAt(LocalDateTime.now());
             alertRepository.save(alert);
-            log.info("Alert marked as read: id={} by user={}", id, user.getUserId());
+            log.info("[AlertService][markAsRead] Alert marked as read: id={} by user={}", id, user.getUserId());
         }
     }
 
     @Transactional
     public void checkAndTrigger(SensorType type, Map<Metric, Float> values, String location, User user, UUID readingId) {
-        log.info("checkAndTrigger called — type={} location={} user={}", type, location, user.getUserId());
+        log.info("[AlertService][checkAndTrigger] checkAndTrigger called — type={} location={} user={}", type, location, user.getUserId());
         List<Settings> settings = settingsRepository.findByUser(user);
         List<AlertData> alerts = new ArrayList<>();
         for (Settings setting : settings) {
@@ -125,7 +126,7 @@ public class AlertService {
                         .build();
                 alerts.add(alert);
                 log.info(
-                        "ALERT TRIGGERED — type={} location={} metric={} value={} threshold={} alertType={}",
+                        "[AlertService][checkAndTrigger] ALERT TRIGGERED — type={} location={} metric={} value={} threshold={} alertType={}",
                         type,
                         location,
                         setting.getMetric(),

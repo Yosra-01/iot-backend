@@ -14,6 +14,7 @@ import com.dxc.iotmonitor.sensor.airpollution.model.AirPollutionSensorData;
 import com.dxc.iotmonitor.sensor.airpollution.repository.AirPollutionSensorRepository;
 import com.dxc.iotmonitor.sensor.common.AlertFanOut;
 import com.dxc.iotmonitor.sensor.common.SensorHandler;
+import com.dxc.iotmonitor.sensor.common.SpecBuilder;
 import com.dxc.iotmonitor.user.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +40,7 @@ public class AirPollutionSensorHandler implements SensorHandler<AirPollutionSens
     private final AirPollutionSensorMapper airPollutionSensorMapper;
     private final AirPollutionValidator airPollutionValidator;
     private final AirPollutionReadingsExtractor airPollutionReadingsExtractor;
-    private final AirPollutionSpecBuilder airPollutionSpecBuilder;
+    private final SpecBuilder<AirPollutionSensorData, AirPollutionFilterParams> airPollutionSpecBuilder;
     private final AlertFanOut alertFanOut;
     private final AlertRepository alertRepository;
 

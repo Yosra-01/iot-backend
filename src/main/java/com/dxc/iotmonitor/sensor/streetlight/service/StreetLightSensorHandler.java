@@ -7,6 +7,7 @@ import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.sensor.common.AlertFanOut;
 import com.dxc.iotmonitor.sensor.common.SensorHandler;
+import com.dxc.iotmonitor.sensor.common.SpecBuilder;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightFilterParams;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorRequest;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorResponse;
@@ -39,7 +40,7 @@ public class StreetLightSensorHandler implements SensorHandler<StreetLightSensor
     private final StreetLightSensorMapper streetLightSensorMapper;
     private final StreetLightValidator streetLightValidator;
     private final StreetLightReadingsExtractor streetLightReadingsExtractor;
-    private final StreetLightSpecBuilder streetLightSpecBuilder;
+    private final SpecBuilder<StreetLightSensorData, StreetLightFilterParams> streetLightSpecBuilder;
     private final AlertFanOut alertFanOut;
     private final AlertRepository alertRepository;
 
