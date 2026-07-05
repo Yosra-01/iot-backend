@@ -42,3 +42,5 @@ Thumbs.db
 
 ### Local profile picture uploads ###
 uploads/
+docs/dev/*
+src/main/resources/application-docker.properties

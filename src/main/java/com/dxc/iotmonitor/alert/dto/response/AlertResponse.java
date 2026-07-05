@@ -28,4 +28,5 @@ public class AlertResponse {
     private AlertType alertType;
     private LocalDateTime triggeredAt;
     private UUID readingId;
+    private LocalDateTime readAt;
 }

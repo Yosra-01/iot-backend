@@ -18,6 +18,7 @@ public class AlertMapper {
                 .alertType(alert.getAlertType())
                 .triggeredAt(alert.getTriggeredAt())
                 .readingId(alert.getReadingId())
+                .readAt(alert.getReadAt())
                 .build();
     }
 }
