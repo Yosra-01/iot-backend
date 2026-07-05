@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "air_pollution_sensor_data")
+@Table(name = "air_pollution_sensor_data", indexes = @Index(name = "idx_air_pollution_loc_ts", columnList = "location,timestamp"))
 @Check(constraints = "pm2_5 >= 0 AND pm2_5 <= 500")
 @Check(constraints = "pm10 >= 0 AND pm10 <= 600")
 @Check(constraints = "co >= 0 AND co <= 50")

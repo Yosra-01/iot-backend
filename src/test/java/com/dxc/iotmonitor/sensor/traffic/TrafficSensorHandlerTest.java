@@ -1,17 +1,25 @@
 package com.dxc.iotmonitor.sensor.traffic;
 
-import com.dxc.iotmonitor.alert.service.AlertService;
 import com.dxc.iotmonitor.enums.CongestionLevel;
-import com.dxc.iotmonitor.sensor.traffic.dto.*;
-import com.dxc.iotmonitor.sensor.traffic.mapper.*;
-import com.dxc.iotmonitor.sensor.traffic.model.*;
-import com.dxc.iotmonitor.sensor.traffic.repository.*;
-import com.dxc.iotmonitor.sensor.traffic.service.*;
-import com.dxc.iotmonitor.user.repository.UserRepository;
-import org.junit.jupiter.api.*;
+import com.dxc.iotmonitor.enums.Metric;
+import com.dxc.iotmonitor.enums.SensorType;
+import com.dxc.iotmonitor.sensor.common.AlertFanOut;
+import com.dxc.iotmonitor.sensor.traffic.dto.TrafficFilterParams;
+import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorRequest;
+import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorResponse;
+import com.dxc.iotmonitor.sensor.traffic.mapper.TrafficSensorMapper;
+import com.dxc.iotmonitor.sensor.traffic.model.TrafficSensorData;
+import com.dxc.iotmonitor.sensor.traffic.repository.TrafficSensorRepository;
+import com.dxc.iotmonitor.sensor.traffic.service.TrafficReadingsExtractor;
+import com.dxc.iotmonitor.sensor.traffic.service.TrafficSensorHandler;
+import com.dxc.iotmonitor.sensor.traffic.service.TrafficSpecBuilder;
+import com.dxc.iotmonitor.sensor.traffic.service.TrafficValidator;
+import com.dxc.iotmonitor.user.model.User;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
-import org.mockito.junit.jupiter.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -19,8 +27,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,13 +37,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class TrafficSensorServiceTest {
+class TrafficSensorHandlerTest {
 
     @Mock
     private TrafficSensorRepository trafficSensorRepository;
@@ -43,13 +53,19 @@ class TrafficSensorServiceTest {
     private TrafficSensorMapper trafficSensorMapper;
 
     @Mock
-    private AlertService alertService;
+    private TrafficValidator trafficValidator;
 
     @Mock
-    private UserRepository userRepository;
+    private TrafficReadingsExtractor trafficReadingsExtractor;
+
+    @Mock
+    private TrafficSpecBuilder trafficSpecBuilder;
+
+    @Mock
+    private AlertFanOut alertFanOut;
 
     @InjectMocks
-    private TrafficSensorService trafficSensorService;
+    private TrafficSensorHandler trafficSensorHandler;
 
     @Test
     void save_ShouldReturnResponse_WhenRequestIsValid() {
@@ -74,15 +90,20 @@ class TrafficSensorServiceTest {
                 .id(responseId)
                 .build();
 
+        Map<Metric, Float> readings = new HashMap<>();
+        readings.put(Metric.TRAFFIC_DENSITY, 200.0f);
+        readings.put(Metric.AVG_SPEED, 60.0f);
+
         when(trafficSensorMapper.toEntity(request)).thenReturn(entity);
         when(trafficSensorRepository.save(entity)).thenReturn(entity);
+        when(trafficReadingsExtractor.extract(entity)).thenReturn(readings);
         when(trafficSensorMapper.toResponse(entity)).thenReturn(mappedResponse);
-        when(userRepository.findAll()).thenReturn(Collections.emptyList());
 
-        TrafficSensorResponse response = trafficSensorService.save(request, Optional.empty());
+        TrafficSensorResponse response = trafficSensorHandler.save(request, Optional.empty());
 
         assertNotNull(response);
         verify(trafficSensorRepository, times(1)).save(entity);
+        verify(alertFanOut, times(1)).fanOut(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -95,26 +116,32 @@ class TrafficSensorServiceTest {
                 .congestionLevel(CongestionLevel.MODERATE)
                 .build();
 
+        doThrow(new IllegalArgumentException("invalid location for this sensor type"))
+                .when(trafficValidator).validate(request);
+
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> trafficSensorService.save(request, Optional.empty()));
+                () -> trafficSensorHandler.save(request, Optional.empty()));
 
         assertEquals("invalid location for this sensor type", ex.getMessage());
         verify(trafficSensorRepository, never()).save(any());
     }
 
-    // THE NEW TEST REPLACING getAll()
     @Test
-    void getFilteredTrafficData_ShouldReturnPaginatedResults() {
-        // Arrange
+    void getFiltered_ShouldReturnPaginatedResults() {
+        TrafficFilterParams filters = new TrafficFilterParams(
+                "CAIRO", 100, 300, null, null, CongestionLevel.HIGH, null, null
+        );
+        Pageable pageable = PageRequest.of(0, 10);
+
         TrafficSensorData mockData = TrafficSensorData.builder()
                 .location("CAIRO_RING_ROAD")
                 .trafficDensity(200)
                 .build();
         Page<TrafficSensorData> mockPage = new PageImpl<>(List.of(mockData));
-        Pageable pageable = PageRequest.of(0, 10);
 
-        // Tell Mockito to return our mockPage when the repository is called with ANY Specification
+        Specification<TrafficSensorData> mockSpec = (root, query, cb) -> cb.conjunction();
+        when(trafficSpecBuilder.build(any(TrafficFilterParams.class))).thenReturn(mockSpec);
         when(trafficSensorRepository.findAll(any(Specification.class), any(Pageable.class)))
                 .thenReturn(mockPage);
 
@@ -123,12 +150,8 @@ class TrafficSensorServiceTest {
                 .build();
         when(trafficSensorMapper.toResponse(any(TrafficSensorData.class))).thenReturn(responseDto);
 
-        // Act
-        Page<TrafficSensorResponse> result = trafficSensorService.getFilteredTrafficData(
-                "CAIRO", 100, 300, null, null, CongestionLevel.HIGH, null, null, pageable
-        );
+        Page<TrafficSensorResponse> result = trafficSensorHandler.getFiltered(filters, pageable);
 
-        // Assert
         assertNotNull(result);
         assertEquals(1, result.getContent().size());
         verify(trafficSensorRepository, times(1)).findAll(any(Specification.class), any(Pageable.class));
@@ -136,7 +159,7 @@ class TrafficSensorServiceTest {
 
     @Test
     void flush_ShouldCallDeleteAll() {
-        trafficSensorService.flush();
+        trafficSensorHandler.flush();
 
         verify(trafficSensorRepository, times(1)).deleteAll();
     }

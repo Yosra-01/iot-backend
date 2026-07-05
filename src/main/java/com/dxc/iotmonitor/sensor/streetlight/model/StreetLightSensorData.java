@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "street_light_sensor_data")
+@Table(name = "street_light_sensor_data", indexes = @Index(name = "idx_street_light_loc_ts", columnList = "location,timestamp"))
 @Check(constraints = "brightness_level >= 0 AND brightness_level <= 100")
 @Check(constraints = "power_consumption >= 0 AND power_consumption <= 5000")
 @Getter
