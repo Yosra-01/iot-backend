@@ -52,6 +52,8 @@ public class SecurityConfig {
                                 "/api/sensors/air-pollution",
                                 "/api/sensors/street-lights"
                         ).permitAll()
+                        //Kubernetes liveness/readiness probes hit these unauthenticated
+                        .requestMatchers("/actuator/health/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
