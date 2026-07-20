@@ -136,9 +136,10 @@ class AlertServiceTest {
     void findById_notFound_throwsResourceNotFoundException() {
         when(alertRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
 
+        UUID id = UUID.randomUUID();
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
-                () -> alertService.findById(UUID.randomUUID(), user));
+                () -> alertService.findById(id, user));
 
         assertEquals("Alert not found.", ex.getMessage());
     }
@@ -200,9 +201,10 @@ class AlertServiceTest {
     void deleteById_notFound_throwsResourceNotFoundException() {
         when(alertRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
 
+        UUID id = UUID.randomUUID();
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
-                () -> alertService.deleteById(UUID.randomUUID(), user));
+                () -> alertService.deleteById(id, user));
 
         assertEquals("Alert not found.", ex.getMessage());
     }
@@ -269,9 +271,10 @@ class AlertServiceTest {
     void markAsRead_notFound_throwsResourceNotFoundException() {
         when(alertRepository.findById(any(UUID.class))).thenReturn(Optional.empty());
 
+        UUID id = UUID.randomUUID();
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
-                () -> alertService.markAsRead(UUID.randomUUID(), user));
+                () -> alertService.markAsRead(id, user));
 
         assertEquals("Alert not found.", ex.getMessage());
     }

@@ -157,9 +157,10 @@ class SettingsServiceTest {
         request.setThresholdValue(10f);
         request.setAlertType(AlertType.ABOVE);
 
+        List<SettingsRequest> requests = List.of(request);
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> settingsService.upsert(List.of(request), user));
+                () -> settingsService.upsert(requests, user));
 
         assertEquals("invalid metric for this sensor type", ex.getMessage());
         verify(settingsRepository, never()).save(any());
@@ -173,9 +174,10 @@ class SettingsServiceTest {
         request.setThresholdValue(600f);
         request.setAlertType(AlertType.ABOVE);
 
+        List<SettingsRequest> requests = List.of(request);
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> settingsService.upsert(List.of(request), user));
+                () -> settingsService.upsert(requests, user));
 
         assertEquals("thresholdValue out of valid range for this metric", ex.getMessage());
         verify(settingsRepository, never()).save(any());
@@ -195,9 +197,10 @@ class SettingsServiceTest {
         request2.setAlertType(AlertType.BELOW);
         request2.setThresholdValue(200f);
 
+        List<SettingsRequest> requests = List.of(request1, request2);
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> settingsService.upsert(List.of(request1, request2), user));
+                () -> settingsService.upsert(requests, user));
 
         assertTrue(ex.getMessage().contains("Contradictory thresholds"));
         verify(settingsRepository, never()).save(any());
