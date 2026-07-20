@@ -28,16 +28,31 @@ import java.util.UUID;
 @Slf4j
 public class SettingsService {
 
+    private static final String VALIDATION_FAILED_LOG = "[SettingsService][upsert] validation failed: {}";
+
     private final SettingsRepository settingsRepository;
     private final SettingsMapper settingsMapper;
 
     @Transactional
     public List<SettingsResponse> upsert(List<SettingsRequest> requests, User user) {
+        validateAllRequests(requests);
+        Map<TypeMetricKey, Map<AlertType, Float>> incomingByKey = groupByTypeMetric(requests);
+        checkContradictions(incomingByKey, user);
+        saveAll(requests, user);
+
+        return settingsRepository.findByUser(user).stream()
+                .map(settingsMapper::toResponse)
+                .toList();
+    }
+
+    private void validateAllRequests(List<SettingsRequest> requests) {
         for (SettingsRequest request : requests) {
             validateMetricForSensorType(request.getType(), request.getMetric());
             validateThresholdRange(request.getMetric(), request.getThresholdValue());
         }
+    }
 
+    private Map<TypeMetricKey, Map<AlertType, Float>> groupByTypeMetric(List<SettingsRequest> requests) {
         Map<TypeMetricKey, Map<AlertType, Float>> incomingByKey = new HashMap<>();
         for (SettingsRequest request : requests) {
             TypeMetricKey key = new TypeMetricKey(request.getType(), request.getMetric());
@@ -45,7 +60,10 @@ public class SettingsService {
                     .computeIfAbsent(key, k -> new EnumMap<>(AlertType.class))
                     .put(request.getAlertType(), request.getThresholdValue());
         }
+        return incomingByKey;
+    }
 
+    private void checkContradictions(Map<TypeMetricKey, Map<AlertType, Float>> incomingByKey, User user) {
         for (Map.Entry<TypeMetricKey, Map<AlertType, Float>> entry : incomingByKey.entrySet()) {
             TypeMetricKey key = entry.getKey();
             Map<AlertType, Float> incoming = entry.getValue();
@@ -72,7 +90,9 @@ public class SettingsService {
                 }
             }
         }
+    }
 
+    private void saveAll(List<SettingsRequest> requests, User user) {
         for (SettingsRequest request : requests) {
             Optional<Settings> existing = settingsRepository.findByUserAndTypeAndMetricAndAlertType(
                     user, request.getType(), request.getMetric(), request.getAlertType());
@@ -90,15 +110,11 @@ public class SettingsService {
             Settings saved = settingsRepository.save(entity);
             log.info("[SettingsService][upsert] saved successfully with id: {}", saved.getId());
         }
-
-        return settingsRepository.findByUser(user).stream()
-                .map(settingsMapper::toResponse)
-                .toList();
     }
 
     private void throwContradiction(Metric metric) {
         String message = "Contradictory thresholds: below value must be less than above value for metric " + metric.name() + ".";
-        log.warn("[SettingsService][upsert] validation failed: {}", message);
+        log.warn(VALIDATION_FAILED_LOG, message);
         throw new IllegalArgumentException(message);
     }
 
@@ -147,7 +163,7 @@ public class SettingsService {
         };
         if (!valid) {
             String message = "invalid metric for this sensor type";
-            log.warn("[SettingsService][upsert] validation failed: {}", message);
+            log.warn(VALIDATION_FAILED_LOG, message);
             throw new IllegalArgumentException(message);
         }
     }
@@ -155,7 +171,7 @@ public class SettingsService {
     private void validateThresholdRange(Metric metric, Float thresholdValue) {
         if (thresholdValue == null) {
             String message = "thresholdValue out of valid range for this metric";
-            log.warn("[SettingsService][upsert] validation failed: {}", message);
+            log.warn(VALIDATION_FAILED_LOG, message);
             throw new IllegalArgumentException(message);
         }
         float v = thresholdValue;
@@ -169,7 +185,7 @@ public class SettingsService {
         };
         if (!inRange) {
             String message = "thresholdValue out of valid range for this metric";
-            log.warn("[SettingsService][upsert] validation failed: {}", message);
+            log.warn(VALIDATION_FAILED_LOG, message);
             throw new IllegalArgumentException(message);
         }
     }

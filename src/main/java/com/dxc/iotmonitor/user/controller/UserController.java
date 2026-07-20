@@ -32,6 +32,8 @@ import java.util.Map;
 @RestController
 public class UserController {
 
+    private static final String MESSAGE_KEY = "message";
+
     private final UserService userService;
     private final RateLimitService rateLimitService;
 
@@ -58,7 +60,7 @@ public class UserController {
         }
 
         userService.updateProfilePicture(email, file);
-        return ResponseEntity.ok(Map.of("message", "Profile picture updated successfully."));
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Profile picture updated successfully."));
     }
 
     // Get User Profile Picture
@@ -93,13 +95,13 @@ public class UserController {
         }
 
         userService.updatePassword(email, request);
-        return ResponseEntity.ok(Map.of("message", "Password updated successfully."));
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Password updated successfully."));
     }
 
     //Delete User By email -> for automated testing purposes
     @DeleteMapping("/delete")
     public ResponseEntity<?> deleteUserByEmail(@RequestParam String email) {
         userService.deleteUserByEmail(email);
-        return ResponseEntity.ok(Map.of("message", "User deleted successfully."));
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, "User deleted successfully."));
     }
 }

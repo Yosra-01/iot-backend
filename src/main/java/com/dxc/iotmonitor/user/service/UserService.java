@@ -31,6 +31,8 @@ import java.util.Optional;
 @Service
 public class UserService {
 
+    private static final String USER_NOT_FOUND = "User not found";
+
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
@@ -42,7 +44,7 @@ public class UserService {
     public ProfileResponse getProfile(String email) {
         User user = userRepository
                 .findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         ProfileResponse response = userMapper.toResponse(user);
         response.setProfilePicture(user.getProfilePicture());
         return response;
@@ -51,7 +53,7 @@ public class UserService {
     public void updateProfilePicture(String email, MultipartFile file) throws IOException {
         User user = userRepository
                 .findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
         String extension = imageFileExtension(file.getContentType());
         Path root = profilePictureProperties.resolvedRoot();
@@ -71,7 +73,7 @@ public class UserService {
     public Resource getProfilePicture(String email) throws IOException {
         User user = userRepository
                 .findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
         if (user.getProfilePicture() == null) {
             throw new ResourceNotFoundException("No profile picture found");
@@ -90,7 +92,7 @@ public class UserService {
     public void updatePassword(String email, UpdatePasswordRequest request) {
         User user = userRepository
                 .findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Current password is incorrect.");
@@ -106,7 +108,7 @@ public class UserService {
         String normalized = email == null ? null : email.trim();
         User user = userRepository
                 .findByEmailIgnoreCase(normalized)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         if (user.getProfilePicture() != null) {
             try {
                 Files.deleteIfExists(Paths.get(user.getProfilePicture()));

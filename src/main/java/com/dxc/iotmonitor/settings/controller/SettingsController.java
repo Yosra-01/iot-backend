@@ -28,6 +28,8 @@ import java.util.Map;
 @Slf4j
 public class SettingsController {
 
+    private static final String USER_NOT_FOUND = "User not found.";
+
     private final SettingsService settingsService;
     private final UserRepository userRepository;
 
@@ -36,7 +38,7 @@ public class SettingsController {
             @RequestBody @Valid List<SettingsRequest> requests) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         return ResponseEntity.ok(settingsService.upsert(requests, user));
     }
 
@@ -44,7 +46,7 @@ public class SettingsController {
     public ResponseEntity<List<SettingsResponse>> findAll() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         return ResponseEntity.ok(settingsService.findAll(user));
     }
 
@@ -52,7 +54,7 @@ public class SettingsController {
     public ResponseEntity<Map<String, String>> deleteById(@PathVariable String id) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         settingsService.deleteById(id, user);
         return ResponseEntity.ok(Map.of("message", "Setting deleted successfully."));
     }
