@@ -23,8 +23,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -109,7 +109,7 @@ public class TrafficSensorHandler implements SensorHandler<TrafficSensorData, Tr
             if (from.isAfter(effectiveTo)) {
                 throw new IllegalArgumentException("invalid date range: 'from' must be before 'to'");
             }
-            if (Duration.between(from, effectiveTo).toDays() > 90) {
+            if (ChronoUnit.DAYS.between(from, effectiveTo) > 90) {
                 throw new IllegalArgumentException("range too wide for daily breakdown");
             }
         }
