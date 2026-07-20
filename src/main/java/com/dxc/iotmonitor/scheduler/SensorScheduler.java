@@ -62,16 +62,18 @@ public class SensorScheduler {
             if (response.getStatusCode().is2xxSuccessful()) {
                 TrafficSensorResponse body = response.getBody();
                 if (body != null) {
-                    log.info("\n[SensorScheduler][sendTrafficReading] Run #{}\n" +
-                            "  ┌─────────────────────────────────────────┐\n" +
-                            "  │ id             : {}                     \n" +
-                            "  │ location       : {}                     \n" +
-                            "  │ timestamp      : {}                     \n" +
-                            "  │ trafficDensity : {} vehicles            \n" +
-                            "  │ avgSpeed       : {} km/h                \n" +
-                            "  │ congestion     : {}                     \n" +
-                            "  │ status         : {} ✓                   \n" +
-                            "  └─────────────────────────────────────────┘",
+                    log.info("""
+
+                            [SensorScheduler][sendTrafficReading] Run #{}
+                              ┌─────────────────────────────────────────┐
+                              │ id             : {}                     
+                              │ location       : {}                     
+                              │ timestamp      : {}                     
+                              │ trafficDensity : {} vehicles            
+                              │ avgSpeed       : {} km/h                
+                              │ congestion     : {}                     
+                              │ status         : {} ✓                   
+                              └─────────────────────────────────────────┘""",
                             run,
                             body.getId(), body.getLocation(), body.getTimestamp(),
                             body.getTrafficDensity(), body.getAvgSpeed(),
@@ -99,20 +101,22 @@ public class SensorScheduler {
             if (response.getStatusCode().is2xxSuccessful()) {
                 AirPollutionSensorResponse body = response.getBody();
                 if (body != null) {
-                    log.info("\n[SensorScheduler][sendAirPollutionReading] Run #{}\n" +
-                            "  ┌─────────────────────────────────────────┐\n" +
-                            "  │ id             : {}                     \n" +
-                            "  │ location       : {}                     \n" +
-                            "  │ timestamp      : {}                     \n" +
-                            "  │ pm2_5          : {} µg/m³               \n" +
-                            "  │ pm10           : {} µg/m³               \n" +
-                            "  │ co             : {} mg/m³               \n" +
-                            "  │ no2            : {} µg/m³               \n" +
-                            "  │ so2            : {} µg/m³               \n" +
-                            "  │ ozone          : {} µg/m³               \n" +
-                            "  │ pollutionLevel : {}                     \n" +
-                            "  │ status         : {} ✓                   \n" +
-                            "  └─────────────────────────────────────────┘",
+                    log.info("""
+
+                            [SensorScheduler][sendAirPollutionReading] Run #{}
+                              ┌─────────────────────────────────────────┐
+                              │ id             : {}                     
+                              │ location       : {}                     
+                              │ timestamp      : {}                     
+                              │ pm2_5          : {} µg/m³               
+                              │ pm10           : {} µg/m³               
+                              │ co             : {} mg/m³               
+                              │ no2            : {} µg/m³               
+                              │ so2            : {} µg/m³               
+                              │ ozone          : {} µg/m³               
+                              │ pollutionLevel : {}                     
+                              │ status         : {} ✓                   
+                              └─────────────────────────────────────────┘""",
                             run,
                             body.getId(), body.getLocation(), body.getTimestamp(),
                             body.getPm2_5(), body.getPm10(), body.getCo(),
@@ -141,16 +145,18 @@ public class SensorScheduler {
             if (response.getStatusCode().is2xxSuccessful()) {
                 StreetLightSensorResponse body = response.getBody();
                 if (body != null) {
-                    log.info("\n[SensorScheduler][sendStreetLightReading] Run #{}\n" +
-                            "  ┌─────────────────────────────────────────┐\n" +
-                            "  │ id               : {}                   \n" +
-                            "  │ location         : {}                   \n" +
-                            "  │ timestamp        : {}                   \n" +
-                            "  │ brightnessLevel  : {}%                  \n" +
-                            "  │ powerConsumption : {} W                 \n" +
-                            "  │ status           : {}                   \n" +
-                            "  │ http             : {} ✓                 \n" +
-                            "  └─────────────────────────────────────────┘",
+                    log.info("""
+
+                            [SensorScheduler][sendStreetLightReading] Run #{}
+                              ┌─────────────────────────────────────────┐
+                              │ id               : {}                   
+                              │ location         : {}                   
+                              │ timestamp        : {}                   
+                              │ brightnessLevel  : {}%                  
+                              │ powerConsumption : {} W                 
+                              │ status           : {}                   
+                              │ http             : {} ✓                 
+                              └─────────────────────────────────────────┘""",
                             run,
                             body.getId(), body.getLocation(), body.getTimestamp(),
                             body.getBrightnessLevel(), body.getPowerConsumption(),
