@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TrafficSensorHandler implements SensorHandler<TrafficSensorData, TrafficSensorRequest, TrafficSensorResponse, TrafficFilterParams> {
+public class TrafficSensorHandler implements SensorHandler<TrafficSensorRequest, TrafficSensorResponse, TrafficFilterParams> {
 
     private final TrafficSensorRepository trafficSensorRepository;
     private final TrafficSensorMapper trafficSensorMapper;

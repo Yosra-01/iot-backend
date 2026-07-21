@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AirPollutionSensorHandler implements SensorHandler<AirPollutionSensorData, AirPollutionSensorRequest, AirPollutionSensorResponse, AirPollutionFilterParams> {
+public class AirPollutionSensorHandler implements SensorHandler<AirPollutionSensorRequest, AirPollutionSensorResponse, AirPollutionFilterParams> {
 
     private final AirPollutionSensorRepository airPollutionSensorRepository;
     private final AirPollutionSensorMapper airPollutionSensorMapper;

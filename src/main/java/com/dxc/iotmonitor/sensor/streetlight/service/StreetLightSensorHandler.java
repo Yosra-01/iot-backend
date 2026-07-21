@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StreetLightSensorHandler implements SensorHandler<StreetLightSensorData, StreetLightSensorRequest, StreetLightSensorResponse, StreetLightFilterParams> {
+public class StreetLightSensorHandler implements SensorHandler<StreetLightSensorRequest, StreetLightSensorResponse, StreetLightFilterParams> {
 
     private final StreetLightSensorRepository streetLightSensorRepository;
     private final StreetLightSensorMapper streetLightSensorMapper;
