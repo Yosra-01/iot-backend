@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -84,7 +85,7 @@ public class AlertService {
                 .orElseThrow(() -> new ResourceNotFoundException("Alert not found."));
         assertOwnedByUser(alert, user, id);
         if (alert.getReadAt() == null) {
-            alert.setReadAt(LocalDateTime.now());
+            alert.setReadAt(LocalDateTime.now(ZoneId.of("Africa/Cairo")));
             alertRepository.save(alert);
             log.info("[AlertService][markAsRead] Alert marked as read: id={} by user={}", id, user.getUserId());
         }

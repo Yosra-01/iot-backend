@@ -24,6 +24,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +106,7 @@ public class StreetLightSensorHandler implements SensorHandler<StreetLightSensor
             throw new IllegalArgumentException("location must not exceed 100 characters");
         }
         if (from != null) {
-            LocalDateTime effectiveTo = (to != null) ? to : LocalDateTime.now();
+            LocalDateTime effectiveTo = (to != null) ? to : LocalDateTime.now(ZoneId.of("Africa/Cairo"));
             if (from.isAfter(effectiveTo)) {
                 throw new IllegalArgumentException("invalid date range: 'from' must be before 'to'");
             }

@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -245,7 +246,7 @@ public class SensorScheduler {
         float[] speedBand = trafficSpeedBand(congestion);
         return TrafficSensorRequest.builder()
                 .location(trafficLocation)
-                .timestamp(LocalDateTime.now().withNano(0))
+                .timestamp(LocalDateTime.now(ZoneId.of("Africa/Cairo")).withNano(0))
                 .trafficDensity(randomIntInBand(rnd, TRAFFIC_DENSITY_MAX, densityBand))
                 .avgSpeed(randomMetricInBand(rnd, TRAFFIC_SPEED_MAX, speedBand))
                 .congestionLevel(congestion)
@@ -280,7 +281,7 @@ public class SensorScheduler {
         float[] band = pollutionBandFractions(level);
         return AirPollutionSensorRequest.builder()
                 .location(airLocation)
-                .timestamp(LocalDateTime.now().withNano(0))
+                .timestamp(LocalDateTime.now(ZoneId.of("Africa/Cairo")).withNano(0))
                 .pm2_5(randomMetricInBand(rnd, AIR_PM25_MAX, band))
                 .pm10(randomMetricInBand(rnd, AIR_PM10_MAX, band))
                 .co(randomMetricInBand(rnd, AIR_CO_MAX, band))
@@ -299,7 +300,7 @@ public class SensorScheduler {
         float[] powerBand = streetPowerBand(status);
         return StreetLightSensorRequest.builder()
                 .location(lightLocation)
-                .timestamp(LocalDateTime.now().withNano(0))
+                .timestamp(LocalDateTime.now(ZoneId.of("Africa/Cairo")).withNano(0))
                 .brightnessLevel(randomIntInBand(rnd, STREET_BRIGHTNESS_MAX, brightnessBand))
                 .powerConsumption(randomMetricInBand(rnd, STREET_POWER_MAX, powerBand))
                 .status(status)

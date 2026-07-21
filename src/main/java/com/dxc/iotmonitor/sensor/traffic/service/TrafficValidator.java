@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Slf4j
 @Component
@@ -30,7 +31,7 @@ public class TrafficValidator implements SensorValidator<TrafficSensorRequest> {
             log.warn("[TrafficValidator][validate] validation failed: {}", message);
             throw new IllegalArgumentException(message);
         }
-        if (request.getTimestamp().isAfter(LocalDateTime.now())) {
+        if (request.getTimestamp().isAfter(LocalDateTime.now(ZoneId.of("Africa/Cairo")))) {
             String message = "timestamp must not be in the future";
             log.warn("[TrafficValidator][validate] validation failed: {}", message);
             throw new IllegalArgumentException(message);
