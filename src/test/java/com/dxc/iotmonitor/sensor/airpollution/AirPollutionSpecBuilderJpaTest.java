@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,7 +41,7 @@ class AirPollutionSpecBuilderJpaTest {
                 .so2(15.0f)
                 .ozone(180.0f)
                 .pollutionLevel(PollutionLevel.UNHEALTHY)
-                .timestamp(LocalDateTime.of(2026, 6, 1, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 1, 10, 0, 0))
                 .build();
 
         row2 = AirPollutionSensorData.builder()
@@ -52,7 +53,7 @@ class AirPollutionSpecBuilderJpaTest {
                 .so2(5.0f)
                 .ozone(60.0f)
                 .pollutionLevel(PollutionLevel.GOOD)
-                .timestamp(LocalDateTime.of(2026, 6, 2, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 2, 10, 0, 0))
                 .build();
 
         row3 = AirPollutionSensorData.builder()
@@ -64,7 +65,7 @@ class AirPollutionSpecBuilderJpaTest {
                 .so2(250.0f)
                 .ozone(250.0f)
                 .pollutionLevel(PollutionLevel.HAZARDOUS)
-                .timestamp(LocalDateTime.of(2026, 6, 3, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 3, 10, 0, 0))
                 .build();
 
         repository.saveAll(List.of(row1, row2, row3));
@@ -130,8 +131,8 @@ class AirPollutionSpecBuilderJpaTest {
         var params = new AirPollutionFilterParams(
                 null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null,
-                LocalDateTime.of(2026, 6, 2, 0, 0, 0),
-                LocalDateTime.of(2026, 6, 3, 23, 59, 59));
+                LocalDateTime.of(2026, Month.JUNE, 2, 0, 0, 0),
+                LocalDateTime.of(2026, Month.JUNE, 3, 23, 59, 59));
         var results = repository.findAll(specBuilder.build(params));
 
         assertEquals(2, results.size());

@@ -1,6 +1,6 @@
 package com.dxc.iotmonitor.sensor.common;
 
-public interface SensorValidator<RQ> {
+public interface SensorValidator<Q> {
 
-    void validate(RQ request);
+    void validate(Q request);
 }

@@ -175,7 +175,7 @@ class UserServiceTest {
     }
 
     @Test
-    void updateProfilePicture_InvalidFileType_ThrowsIllegalArgumentException() throws IOException {
+    void updateProfilePicture_InvalidFileType_ThrowsIllegalArgumentException() {
         // Arrange
         String email = "john.doe@example.com";
 

@@ -25,7 +25,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.time.Month;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -33,12 +34,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -226,7 +225,7 @@ class AlertServiceTest {
     @Test
     void markAsRead_alreadyRead_isIdempotent() {
         UUID id = UUID.randomUUID();
-        LocalDateTime originalReadAt = LocalDateTime.of(2026, 6, 1, 10, 0, 0);
+        LocalDateTime originalReadAt = LocalDateTime.of(2026, Month.JUNE, 1, 10, 0, 0);
         AlertData alertData = new AlertData();
         alertData.setId(id);
         alertData.setUser(user);
@@ -426,7 +425,7 @@ class AlertServiceTest {
 
         when(settingsRepository.findByUser(user)).thenReturn(List.of(setting));
 
-        Map<Metric, Float> values = new HashMap<>();
+        Map<Metric, Float> values = new EnumMap<>(Metric.class);
         values.put(Metric.TRAFFIC_DENSITY, null);
 
         alertService.checkAndTrigger(

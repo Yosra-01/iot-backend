@@ -2,7 +2,6 @@ package com.dxc.iotmonitor.sensor.airpollution.service;
 
 import com.dxc.iotmonitor.enums.Metric;
 import com.dxc.iotmonitor.enums.PollutionLevel;
-import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionFilterParams;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorRequest;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorResponse;
@@ -22,7 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -96,7 +95,7 @@ class AirPollutionSensorHandlerTest {
                 .id(id)
                 .build();
 
-        Map<Metric, Float> readings = new HashMap<>();
+        Map<Metric, Float> readings = new EnumMap<>(Metric.class);
         readings.put(Metric.CO, 25.1f);
         readings.put(Metric.OZONE, 180.0f);
 

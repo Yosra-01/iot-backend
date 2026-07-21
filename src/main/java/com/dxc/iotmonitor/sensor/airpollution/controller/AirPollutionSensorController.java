@@ -37,8 +37,8 @@ public class AirPollutionSensorController {
     @GetMapping
     public ResponseEntity<Page<AirPollutionSensorResponse>> listAll(
             @RequestParam(required = false) String location,
-            @RequestParam(required = false) Float minPm2_5,
-            @RequestParam(required = false) Float maxPm2_5,
+            @RequestParam(value = "minPm2_5", required = false) Float minPm25,
+            @RequestParam(value = "maxPm2_5", required = false) Float maxPm25,
             @RequestParam(required = false) Float minPm10,
             @RequestParam(required = false) Float maxPm10,
             @RequestParam(required = false) Float minCo,
@@ -58,7 +58,7 @@ public class AirPollutionSensorController {
             @RequestParam(defaultValue = "desc") String sortDir) {
 
         AirPollutionFilterParams filters = new AirPollutionFilterParams(
-                location, minPm2_5, maxPm2_5, minPm10, maxPm10,
+                location, minPm25, maxPm25, minPm10, maxPm10,
                 minCo, maxCo, minNo2, maxNo2, minSo2, maxSo2,
                 minOzone, maxOzone, pollutionLevel, timestampStart, timestampEnd
         );

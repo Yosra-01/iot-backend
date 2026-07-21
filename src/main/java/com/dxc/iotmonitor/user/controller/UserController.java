@@ -51,7 +51,7 @@ public class UserController {
 
     //Change User Profile Picture
     @PatchMapping("/profile/picture")
-    public ResponseEntity<?> updateProfilePicture(@RequestParam("file") MultipartFile file)
+    public ResponseEntity<Map<String, String>> updateProfilePicture(@RequestParam("file") MultipartFile file)
             throws TooManyRequestsException, IOException {
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -86,7 +86,7 @@ public class UserController {
 
     //Change User Password
     @PatchMapping("/profile/password")
-    public ResponseEntity<?> updatePassword(@RequestBody @Valid UpdatePasswordRequest request)
+    public ResponseEntity<Map<String, String>> updatePassword(@RequestBody @Valid UpdatePasswordRequest request)
             throws TooManyRequestsException {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
@@ -100,7 +100,7 @@ public class UserController {
 
     //Delete User By email -> for automated testing purposes
     @DeleteMapping("/delete")
-    public ResponseEntity<?> deleteUserByEmail(@RequestParam String email) {
+    public ResponseEntity<Map<String, String>> deleteUserByEmail(@RequestParam String email) {
         userService.deleteUserByEmail(email);
         return ResponseEntity.ok(Map.of(MESSAGE_KEY, "User deleted successfully."));
     }

@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +38,7 @@ class StreetLightSpecBuilderJpaTest {
                 .brightnessLevel(75)
                 .powerConsumption(1200.0f)
                 .status(LightStatus.ON)
-                .timestamp(LocalDateTime.of(2026, 6, 1, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 1, 10, 0, 0))
                 .build();
 
         row2 = StreetLightSensorData.builder()
@@ -45,7 +46,7 @@ class StreetLightSpecBuilderJpaTest {
                 .brightnessLevel(20)
                 .powerConsumption(300.0f)
                 .status(LightStatus.OFF)
-                .timestamp(LocalDateTime.of(2026, 6, 2, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 2, 10, 0, 0))
                 .build();
 
         row3 = StreetLightSensorData.builder()
@@ -53,7 +54,7 @@ class StreetLightSpecBuilderJpaTest {
                 .brightnessLevel(100)
                 .powerConsumption(4500.0f)
                 .status(LightStatus.ON)
-                .timestamp(LocalDateTime.of(2026, 6, 3, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 3, 10, 0, 0))
                 .build();
 
         repository.saveAll(List.of(row1, row2, row3));
@@ -103,8 +104,8 @@ class StreetLightSpecBuilderJpaTest {
     void filterByTimestampRange_returnsInWindow() {
         var params = new StreetLightFilterParams(
                 null, null, null, null, null, null,
-                LocalDateTime.of(2026, 6, 2, 0, 0, 0),
-                LocalDateTime.of(2026, 6, 3, 23, 59, 59));
+                LocalDateTime.of(2026, Month.JUNE, 2, 0, 0, 0),
+                LocalDateTime.of(2026, Month.JUNE, 3, 23, 59, 59));
         var results = repository.findAll(specBuilder.build(params));
 
         assertEquals(2, results.size());

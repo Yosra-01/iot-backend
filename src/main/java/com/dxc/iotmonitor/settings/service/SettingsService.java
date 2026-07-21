@@ -65,29 +65,31 @@ public class SettingsService {
 
     private void checkContradictions(Map<TypeMetricKey, Map<AlertType, Float>> incomingByKey, User user) {
         for (Map.Entry<TypeMetricKey, Map<AlertType, Float>> entry : incomingByKey.entrySet()) {
-            TypeMetricKey key = entry.getKey();
-            Map<AlertType, Float> incoming = entry.getValue();
-            Float aboveIncoming = incoming.get(AlertType.ABOVE);
-            Float belowIncoming = incoming.get(AlertType.BELOW);
+            checkEntryContradiction(entry.getKey(), entry.getValue(), user);
+        }
+    }
 
-            if (aboveIncoming != null && belowIncoming != null && !(belowIncoming < aboveIncoming)) {
+    private void checkEntryContradiction(TypeMetricKey key, Map<AlertType, Float> incoming, User user) {
+        Float aboveIncoming = incoming.get(AlertType.ABOVE);
+        Float belowIncoming = incoming.get(AlertType.BELOW);
+
+        if (aboveIncoming != null && belowIncoming != null && belowIncoming >= aboveIncoming) {
+            throwContradiction(key.metric());
+        }
+
+        if (aboveIncoming != null) {
+            Optional<Settings> dbBelow = settingsRepository.findByUserAndTypeAndMetricAndAlertType(
+                    user, key.type(), key.metric(), AlertType.BELOW);
+            if (dbBelow.isPresent() && dbBelow.get().getThresholdValue() >= aboveIncoming) {
                 throwContradiction(key.metric());
             }
+        }
 
-            if (aboveIncoming != null) {
-                Optional<Settings> dbBelow = settingsRepository.findByUserAndTypeAndMetricAndAlertType(
-                        user, key.type(), key.metric(), AlertType.BELOW);
-                if (dbBelow.isPresent() && !(dbBelow.get().getThresholdValue() < aboveIncoming)) {
-                    throwContradiction(key.metric());
-                }
-            }
-
-            if (belowIncoming != null) {
-                Optional<Settings> dbAbove = settingsRepository.findByUserAndTypeAndMetricAndAlertType(
-                        user, key.type(), key.metric(), AlertType.ABOVE);
-                if (dbAbove.isPresent() && !(belowIncoming < dbAbove.get().getThresholdValue())) {
-                    throwContradiction(key.metric());
-                }
+        if (belowIncoming != null) {
+            Optional<Settings> dbAbove = settingsRepository.findByUserAndTypeAndMetricAndAlertType(
+                    user, key.type(), key.metric(), AlertType.ABOVE);
+            if (dbAbove.isPresent() && belowIncoming >= dbAbove.get().getThresholdValue()) {
+                throwContradiction(key.metric());
             }
         }
     }
