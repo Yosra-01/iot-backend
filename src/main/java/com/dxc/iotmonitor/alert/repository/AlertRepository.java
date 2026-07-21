@@ -16,9 +16,6 @@ import java.util.UUID;
 @Repository
 public interface AlertRepository extends JpaRepository<AlertData, UUID>, JpaSpecificationExecutor<AlertData> {
 
-    @Deprecated
-    List<AlertData> findByUserOrderByTriggeredAtDesc(User user);
-
     long countByUser(User user);
 
     long countByUserAndReadAtIsNull(User user);

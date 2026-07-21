@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.Optional;
 
-public interface SensorHandler<E, RQ, RS, F> {
+public interface SensorHandler<RQ, RS, F> {
 
     RS save(RQ request, Optional<User> user);
 
