@@ -18,9 +18,13 @@ public class UpdatePasswordRequest {
     @NotBlank(message = "new password is required")
     @Size(min = 8, message = "password must at least 8 characters long")
     @Size(max = 64, message = "password too long. 64 characters is the maximum") //DOS prevention -> without max, a long password would take forever to be hashed
+    @Pattern(regexp = "^$|.*[a-z].*", message = "must contain a lowercase letter")
+    @Pattern(regexp = "^$|.*[A-Z].*", message = "must contain an uppercase letter")
+    @Pattern(regexp = "^$|.*\\d.*", message = "must contain a digit")
+    @Pattern(regexp = "^$|.*[@$!%*?&].*", message = "must contain a special character")
     @Pattern(
-            regexp = "^((?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+)?$",
-            message = "password must contain at least one uppercase letter, one lowercase letter, one number, and one special character"
+            regexp = "^$|^[A-Za-z\\d@$!%*?&]*$",
+            message = "only letters, digits and the special characters @$!%*?& are allowed"
     )
     private String newPassword;
 }
