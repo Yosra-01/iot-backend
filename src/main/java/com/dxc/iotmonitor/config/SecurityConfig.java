@@ -32,7 +32,7 @@ public class SecurityConfig {
                 // CSRF is safely disabled: this API uses stateless JWT auth via the Authorization
                 // header, not cookie-based sessions, so the browser-auto-attaches-cookies attack
                 // vector that CSRF protects against does not apply here.
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(AbstractHttpConfigurer::disable) // NOSONAR java:S4502 — JWT bearer auth, no cookie session
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // no sessions — JWT handles auth state
                 )

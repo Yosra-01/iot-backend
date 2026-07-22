@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 
 public record AirPollutionFilterParams(
         String location,
-        Float minPm2_5,
-        Float maxPm2_5,
+        Float minPm25,
+        Float maxPm25,
         Float minPm10,
         Float maxPm10,
         Float minCo,

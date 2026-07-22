@@ -34,7 +34,7 @@ class AirPollutionSpecBuilderJpaTest {
     void setUp() {
         row1 = AirPollutionSensorData.builder()
                 .location("CAIRO_NASR_CITY")
-                .pm2_5(120.5f)
+                .pm25(120.5f)
                 .pm10(200.0f)
                 .co(25.0f)
                 .no2(30.0f)
@@ -46,7 +46,7 @@ class AirPollutionSpecBuilderJpaTest {
 
         row2 = AirPollutionSensorData.builder()
                 .location("CAIRO_MAADI")
-                .pm2_5(50.0f)
+                .pm25(50.0f)
                 .pm10(60.0f)
                 .co(10.0f)
                 .no2(15.0f)
@@ -58,7 +58,7 @@ class AirPollutionSpecBuilderJpaTest {
 
         row3 = AirPollutionSensorData.builder()
                 .location("CAIRO_HELIOPOLIS")
-                .pm2_5(300.0f)
+                .pm25(300.0f)
                 .pm10(400.0f)
                 .co(45.0f)
                 .no2(150.0f)
@@ -90,7 +90,7 @@ class AirPollutionSpecBuilderJpaTest {
         var results = repository.findAll(specBuilder.build(params));
 
         assertEquals(1, results.size());
-        assertEquals(120.5f, results.get(0).getPm2_5(), 0.01);
+        assertEquals(120.5f, results.get(0).getPm25(), 0.01);
     }
 
     @Test

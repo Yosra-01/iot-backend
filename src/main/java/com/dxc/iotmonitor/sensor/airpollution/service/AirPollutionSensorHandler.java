@@ -106,11 +106,13 @@ public class AirPollutionSensorHandler implements SensorHandler<AirPollutionSens
             throw new IllegalArgumentException("location must not exceed 100 characters");
         }
         if (from != null) {
-            LocalDateTime effectiveTo = (to != null) ? to : LocalDateTime.now(ZoneId.of("Africa/Cairo"));
+            ZoneId zone = ZoneId.of("Africa/Cairo");
+            LocalDateTime effectiveTo = (to != null) ? to : LocalDateTime.now(zone);
             if (from.isAfter(effectiveTo)) {
                 throw new IllegalArgumentException("invalid date range: 'from' must be before 'to'");
             }
-            if (ChronoUnit.DAYS.between(from, effectiveTo) > 90) {
+            // Convert to ZonedDateTime so duration is computed on zone-aware instants (java:S8700).
+            if (ChronoUnit.DAYS.between(from.atZone(zone), effectiveTo.atZone(zone)) > 90) {
                 throw new IllegalArgumentException("range too wide for daily breakdown");
             }
         }

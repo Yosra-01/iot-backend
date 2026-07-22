@@ -33,6 +33,7 @@ public class SensorScheduler {
     private static final AtomicInteger trafficRunCount = new AtomicInteger(0);
     private static final AtomicInteger airPollutionRunCount = new AtomicInteger(0);
     private static final AtomicInteger streetLightRunCount = new AtomicInteger(0);
+    private static final ZoneId CAIRO_ZONE = ZoneId.of("Africa/Cairo");
 
     private final RestTemplate restTemplate;
 
@@ -120,7 +121,7 @@ public class SensorScheduler {
                               └─────────────────────────────────────────┘""",
                             run,
                             body.getId(), body.getLocation(), body.getTimestamp(),
-                            body.getPm2_5(), body.getPm10(), body.getCo(),
+                            body.getPm25(), body.getPm10(), body.getCo(),
                             body.getNo2(), body.getSo2(), body.getOzone(),
                             body.getPollutionLevel(), response.getStatusCode());
                 } else {
@@ -246,7 +247,7 @@ public class SensorScheduler {
         float[] speedBand = trafficSpeedBand(congestion);
         return TrafficSensorRequest.builder()
                 .location(trafficLocation)
-                .timestamp(LocalDateTime.now(ZoneId.of("Africa/Cairo")).withNano(0))
+                .timestamp(LocalDateTime.now(CAIRO_ZONE).withNano(0))
                 .trafficDensity(randomIntInBand(rnd, TRAFFIC_DENSITY_MAX, densityBand))
                 .avgSpeed(randomMetricInBand(rnd, TRAFFIC_SPEED_MAX, speedBand))
                 .congestionLevel(congestion)
@@ -281,8 +282,8 @@ public class SensorScheduler {
         float[] band = pollutionBandFractions(level);
         return AirPollutionSensorRequest.builder()
                 .location(airLocation)
-                .timestamp(LocalDateTime.now(ZoneId.of("Africa/Cairo")).withNano(0))
-                .pm2_5(randomMetricInBand(rnd, AIR_PM25_MAX, band))
+                .timestamp(LocalDateTime.now(CAIRO_ZONE).withNano(0))
+                .pm25(randomMetricInBand(rnd, AIR_PM25_MAX, band))
                 .pm10(randomMetricInBand(rnd, AIR_PM10_MAX, band))
                 .co(randomMetricInBand(rnd, AIR_CO_MAX, band))
                 .no2(randomMetricInBand(rnd, AIR_NO2_MAX, band))
@@ -300,7 +301,7 @@ public class SensorScheduler {
         float[] powerBand = streetPowerBand(status);
         return StreetLightSensorRequest.builder()
                 .location(lightLocation)
-                .timestamp(LocalDateTime.now(ZoneId.of("Africa/Cairo")).withNano(0))
+                .timestamp(LocalDateTime.now(CAIRO_ZONE).withNano(0))
                 .brightnessLevel(randomIntInBand(rnd, STREET_BRIGHTNESS_MAX, brightnessBand))
                 .powerConsumption(randomMetricInBand(rnd, STREET_POWER_MAX, powerBand))
                 .status(status)

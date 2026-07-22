@@ -34,7 +34,7 @@ class AirPollutionStatsJpaTest {
                         .location("CAIRO_NASR_CITY")
                         .co(25.0f)
                         .ozone(180.0f)
-                        .pm2_5(120.5f).pm10(200.0f).no2(30.0f).so2(15.0f)
+                        .pm25(120.5f).pm10(200.0f).no2(30.0f).so2(15.0f)
                         .pollutionLevel(PollutionLevel.UNHEALTHY)
                         .timestamp(LocalDateTime.of(2026, Month.JUNE, 1, 10, 0, 0))
                         .build(),
@@ -42,7 +42,7 @@ class AirPollutionStatsJpaTest {
                         .location("CAIRO_NASR_CITY")
                         .co(15.0f)
                         .ozone(120.0f)
-                        .pm2_5(50.0f).pm10(60.0f).no2(15.0f).so2(5.0f)
+                        .pm25(50.0f).pm10(60.0f).no2(15.0f).so2(5.0f)
                         .pollutionLevel(PollutionLevel.MODERATE)
                         .timestamp(LocalDateTime.of(2026, Month.JUNE, 1, 14, 0, 0))
                         .build(),
@@ -50,7 +50,7 @@ class AirPollutionStatsJpaTest {
                         .location("CAIRO_MAADI")
                         .co(10.0f)
                         .ozone(60.0f)
-                        .pm2_5(30.0f).pm10(40.0f).no2(10.0f).so2(3.0f)
+                        .pm25(30.0f).pm10(40.0f).no2(10.0f).so2(3.0f)
                         .pollutionLevel(PollutionLevel.GOOD)
                         .timestamp(LocalDateTime.of(2026, Month.JUNE, 2, 10, 0, 0))
                         .build(),
@@ -58,7 +58,7 @@ class AirPollutionStatsJpaTest {
                         .location("CAIRO_NASR_CITY")
                         .co(35.0f)
                         .ozone(200.0f)
-                        .pm2_5(200.0f).pm10(300.0f).no2(100.0f).so2(150.0f)
+                        .pm25(200.0f).pm10(300.0f).no2(100.0f).so2(150.0f)
                         .pollutionLevel(PollutionLevel.UNHEALTHY)
                         .timestamp(LocalDateTime.of(2026, Month.JUNE, 3, 10, 0, 0))
                         .build()

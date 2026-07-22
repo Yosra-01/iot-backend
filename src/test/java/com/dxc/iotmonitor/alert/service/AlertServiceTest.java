@@ -124,9 +124,10 @@ class AlertServiceTest {
 
         when(alertRepository.findById(alertData.getId())).thenReturn(Optional.of(alertData));
 
+        UUID alertId = alertData.getId();
         AccessDeniedException ex = assertThrows(
                 AccessDeniedException.class,
-                () -> alertService.findById(alertData.getId(), user));
+                () -> alertService.findById(alertId, user));
 
         assertTrue(ex.getMessage().contains("permission"));
     }

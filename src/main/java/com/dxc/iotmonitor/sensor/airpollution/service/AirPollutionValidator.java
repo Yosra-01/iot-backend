@@ -20,7 +20,7 @@ public class AirPollutionValidator implements SensorValidator<AirPollutionSensor
     public void validate(AirPollutionSensorRequest request) {
         validateLocation(request);
         validateTimestamp(request);
-        validateRange(request.getPm2_5(), 0, 500, "pm2_5");
+        validateRange(request.getPm25(), 0, 500, "pm2_5");
         validateRange(request.getPm10(), 0, 600, "pm10");
         validateRange(request.getCo(), 0, 50, "co");
         validateRange(request.getNo2(), 0, 200, "no2");

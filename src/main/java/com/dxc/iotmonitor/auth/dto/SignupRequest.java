@@ -37,12 +37,13 @@ public class SignupRequest {
     @NotBlank(message = "password is required")
     @Size(min = 8, message = "password must at least 8 characters long")
     @Size(max = 64, message = "password too long. 64 characters is the maximum") //DOS prevention -> without max, a long password would take forever to be hashed
-    @Pattern(regexp = "^$|.*[a-z].*", message = "must contain a lowercase letter")
-    @Pattern(regexp = "^$|.*[A-Z].*", message = "must contain an uppercase letter")
-    @Pattern(regexp = "^$|.*\\d.*", message = "must contain a digit")
-    @Pattern(regexp = "^$|.*[@$!%*?&].*", message = "must contain a special character")
+    // Possessive / negated-class forms avoid super-linear backtracking (java:S8786).
+    @Pattern(regexp = "^$|[^a-z]*+[a-z][\\s\\S]*+", message = "must contain a lowercase letter")
+    @Pattern(regexp = "^$|[^A-Z]*+[A-Z][\\s\\S]*+", message = "must contain an uppercase letter")
+    @Pattern(regexp = "^$|\\D*+\\d[\\s\\S]*+", message = "must contain a digit")
+    @Pattern(regexp = "^$|[^@$!%*?&]*+[@$!%*?&][\\s\\S]*+", message = "must contain a special character")
     @Pattern(
-            regexp = "^$|^[A-Za-z\\d@$!%*?&]*$",
+            regexp = "^$|^[A-Za-z\\d@$!%*?&]*+$",
             message = "only letters, digits and the special characters @$!%*?& are allowed"
     )
     private String password;
