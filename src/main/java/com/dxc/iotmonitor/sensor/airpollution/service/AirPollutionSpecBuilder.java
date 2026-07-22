@@ -21,7 +21,7 @@ public class AirPollutionSpecBuilder implements SpecBuilder<AirPollutionSensorDa
             List<Predicate> predicates = new ArrayList<>();
 
             addLocationPredicate(predicates, root, cb, filters);
-            addPm2_5Predicates(predicates, root, cb, filters);
+            addPm25Predicates(predicates, root, cb, filters);
             addPm10Predicates(predicates, root, cb, filters);
             addCoPredicates(predicates, root, cb, filters);
             addNo2Predicates(predicates, root, cb, filters);
@@ -40,7 +40,7 @@ public class AirPollutionSpecBuilder implements SpecBuilder<AirPollutionSensorDa
         }
     }
 
-    private void addPm2_5Predicates(List<Predicate> predicates, Root<AirPollutionSensorData> root,
+    private void addPm25Predicates(List<Predicate> predicates, Root<AirPollutionSensorData> root,
                                     CriteriaBuilder cb, AirPollutionFilterParams filters) {
         if (filters.minPm2_5() != null) {
             predicates.add(cb.greaterThanOrEqualTo(root.get("pm2_5"), filters.minPm2_5()));

@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,8 +42,8 @@ class StreetLightStatsHandlerTest {
 
     @Test
     void getStats_withData_returnsFullResponse() {
-        LocalDateTime from = LocalDateTime.of(2026, 6, 1, 0, 0, 0);
-        LocalDateTime to = LocalDateTime.of(2026, 6, 3, 23, 59, 59);
+        LocalDateTime from = LocalDateTime.of(2026, Month.JUNE, 1, 0, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, Month.JUNE, 3, 23, 59, 59);
 
         StreetLightSensorRepository.StatsProjection statsMock = mock(StreetLightSensorRepository.StatsProjection.class);
         when(statsMock.getTotalReadings()).thenReturn(4L);
@@ -60,7 +61,7 @@ class StreetLightStatsHandlerTest {
 
         StreetLightSensorRepository.DailyAverageProjection dailyMock =
                 mock(StreetLightSensorRepository.DailyAverageProjection.class);
-        when(dailyMock.getDate()).thenReturn(LocalDate.of(2026, 6, 1));
+        when(dailyMock.getDate()).thenReturn(LocalDate.of(2026, Month.JUNE, 1));
         when(dailyMock.getAvgBrightness()).thenReturn(80.0);
         when(dailyMock.getAvgPowerConsumption()).thenReturn(1250.0);
 
@@ -123,8 +124,8 @@ class StreetLightStatsHandlerTest {
 
     @Test
     void getStats_withRangeOver90Days_throwsException() {
-        LocalDateTime from = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
-        LocalDateTime to = LocalDateTime.of(2026, 6, 1, 0, 0, 0);
+        LocalDateTime from = LocalDateTime.of(2026, Month.JANUARY, 1, 0, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, Month.JUNE, 1, 0, 0, 0);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,

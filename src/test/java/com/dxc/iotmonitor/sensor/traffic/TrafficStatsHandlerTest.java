@@ -14,8 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -42,8 +42,8 @@ class TrafficStatsHandlerTest {
 
     @Test
     void getStats_withData_returnsFullResponse() {
-        LocalDateTime from = LocalDateTime.of(2026, 6, 1, 0, 0, 0);
-        LocalDateTime to = LocalDateTime.of(2026, 6, 3, 23, 59, 59);
+        LocalDateTime from = LocalDateTime.of(2026, Month.JUNE, 1, 0, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, Month.JUNE, 3, 23, 59, 59);
 
         TrafficSensorRepository.StatsProjection statsMock = mock(TrafficSensorRepository.StatsProjection.class);
         when(statsMock.getTotalReadings()).thenReturn(4L);
@@ -65,7 +65,7 @@ class TrafficStatsHandlerTest {
 
         TrafficSensorRepository.DailyAverageProjection dailyMock =
                 mock(TrafficSensorRepository.DailyAverageProjection.class);
-        when(dailyMock.getDate()).thenReturn(LocalDate.of(2026, 6, 1));
+        when(dailyMock.getDate()).thenReturn(LocalDate.of(2026, Month.JUNE, 1));
         when(dailyMock.getAvgTrafficDensity()).thenReturn(300.0);
         when(dailyMock.getAvgSpeed()).thenReturn(45.0);
 
@@ -133,8 +133,8 @@ class TrafficStatsHandlerTest {
 
     @Test
     void getStats_withRangeOver90Days_throwsException() {
-        LocalDateTime from = LocalDateTime.of(2026, 1, 1, 0, 0, 0);
-        LocalDateTime to = LocalDateTime.of(2026, 6, 1, 0, 0, 0);
+        LocalDateTime from = LocalDateTime.of(2026, Month.JANUARY, 1, 0, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, Month.JUNE, 1, 0, 0, 0);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
@@ -174,8 +174,8 @@ class TrafficStatsHandlerTest {
 
     @Test
     void getStats_withFromAfterTo_throwsException() {
-        LocalDateTime from = LocalDateTime.of(2026, 6, 3, 0, 0, 0);
-        LocalDateTime to = LocalDateTime.of(2026, 6, 1, 0, 0, 0);
+        LocalDateTime from = LocalDateTime.of(2026, Month.JUNE, 3, 0, 0, 0);
+        LocalDateTime to = LocalDateTime.of(2026, Month.JUNE, 1, 0, 0, 0);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,

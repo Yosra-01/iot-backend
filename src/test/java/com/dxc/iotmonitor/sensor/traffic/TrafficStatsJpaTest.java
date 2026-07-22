@@ -12,6 +12,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Month;
+import java.util.EnumMap;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +35,7 @@ class TrafficStatsJpaTest {
                 .trafficDensity(200)
                 .avgSpeed(60.0f)
                 .congestionLevel(CongestionLevel.MODERATE)
-                .timestamp(LocalDateTime.of(2026, 6, 1, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 1, 10, 0, 0))
                 .build();
 
         TrafficSensorData row2 = TrafficSensorData.builder()
@@ -41,7 +43,7 @@ class TrafficStatsJpaTest {
                 .trafficDensity(400)
                 .avgSpeed(30.0f)
                 .congestionLevel(CongestionLevel.HIGH)
-                .timestamp(LocalDateTime.of(2026, 6, 1, 14, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 1, 14, 0, 0))
                 .build();
 
         TrafficSensorData row3 = TrafficSensorData.builder()
@@ -49,7 +51,7 @@ class TrafficStatsJpaTest {
                 .trafficDensity(100)
                 .avgSpeed(80.0f)
                 .congestionLevel(CongestionLevel.LOW)
-                .timestamp(LocalDateTime.of(2026, 6, 2, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 2, 10, 0, 0))
                 .build();
 
         TrafficSensorData row4 = TrafficSensorData.builder()
@@ -57,7 +59,7 @@ class TrafficStatsJpaTest {
                 .trafficDensity(300)
                 .avgSpeed(50.0f)
                 .congestionLevel(CongestionLevel.MODERATE)
-                .timestamp(LocalDateTime.of(2026, 6, 3, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 3, 10, 0, 0))
                 .build();
 
         repository.saveAll(List.of(row1, row2, row3, row4));
@@ -112,7 +114,7 @@ class TrafficStatsJpaTest {
         var result = repository.findCongestionLevelDistribution(null, null, null);
 
         assertEquals(3, result.size());
-        var map = new java.util.HashMap<CongestionLevel, Long>();
+        var map = new EnumMap<>(CongestionLevel.class);
         result.forEach(p -> map.put(p.getCongestionLevel(), p.getCount()));
         assertEquals(2L, map.get(CongestionLevel.MODERATE));
         assertEquals(1L, map.get(CongestionLevel.HIGH));
@@ -130,35 +132,35 @@ class TrafficStatsJpaTest {
 
     @Test
     void findDailyAverages_allLocations_returnsGroupedByDate() {
-        var from = LocalDateTime.of(2026, 6, 1, 0, 0, 0);
-        var to = LocalDateTime.of(2026, 6, 3, 23, 59, 59);
+        var from = LocalDateTime.of(2026, Month.JUNE, 1, 0, 0, 0);
+        var to = LocalDateTime.of(2026, Month.JUNE, 3, 23, 59, 59);
 
         var result = repository.findDailyAverages(from, to, null);
 
         assertEquals(3, result.size());
-        assertEquals(LocalDate.of(2026, 6, 1), result.get(0).getDate());
+        assertEquals(LocalDate.of(2026, Month.JUNE, 1), result.get(0).getDate());
         assertEquals(300.0, result.get(0).getAvgTrafficDensity(), 0.01);
         assertEquals(45.0, result.get(0).getAvgSpeed(), 0.01);
-        assertEquals(LocalDate.of(2026, 6, 2), result.get(1).getDate());
-        assertEquals(LocalDate.of(2026, 6, 3), result.get(2).getDate());
+        assertEquals(LocalDate.of(2026, Month.JUNE, 2), result.get(1).getDate());
+        assertEquals(LocalDate.of(2026, Month.JUNE, 3), result.get(2).getDate());
     }
 
     @Test
     void findDailyAverages_withLocationFilter_returnsSparseSeries() {
-        var from = LocalDateTime.of(2026, 6, 1, 0, 0, 0);
-        var to = LocalDateTime.of(2026, 6, 3, 23, 59, 59);
+        var from = LocalDateTime.of(2026, Month.JUNE, 1, 0, 0, 0);
+        var to = LocalDateTime.of(2026, Month.JUNE, 3, 23, 59, 59);
 
         var result = repository.findDailyAverages(from, to, "CAIRO_RING_ROAD");
 
         assertEquals(2, result.size());
-        assertEquals(LocalDate.of(2026, 6, 1), result.get(0).getDate());
-        assertEquals(LocalDate.of(2026, 6, 3), result.get(1).getDate());
+        assertEquals(LocalDate.of(2026, Month.JUNE, 1), result.get(0).getDate());
+        assertEquals(LocalDate.of(2026, Month.JUNE, 3), result.get(1).getDate());
     }
 
     @Test
     void findDailyAverages_noDataInRange_returnsEmpty() {
-        var from = LocalDateTime.of(2025, 1, 1, 0, 0, 0);
-        var to = LocalDateTime.of(2025, 1, 2, 0, 0, 0);
+        var from = LocalDateTime.of(2025, Month.JANUARY, 1, 0, 0, 0);
+        var to = LocalDateTime.of(2025, Month.JANUARY, 2, 0, 0, 0);
 
         var result = repository.findDailyAverages(from, to, null);
 

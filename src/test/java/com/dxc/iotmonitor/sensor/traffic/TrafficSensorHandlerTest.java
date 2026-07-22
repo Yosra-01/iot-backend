@@ -2,7 +2,6 @@ package com.dxc.iotmonitor.sensor.traffic;
 
 import com.dxc.iotmonitor.enums.CongestionLevel;
 import com.dxc.iotmonitor.enums.Metric;
-import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.sensor.common.AlertFanOut;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficFilterParams;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorRequest;
@@ -14,7 +13,6 @@ import com.dxc.iotmonitor.sensor.traffic.service.TrafficReadingsExtractor;
 import com.dxc.iotmonitor.sensor.traffic.service.TrafficSensorHandler;
 import com.dxc.iotmonitor.sensor.traffic.service.TrafficSpecBuilder;
 import com.dxc.iotmonitor.sensor.traffic.service.TrafficValidator;
-import com.dxc.iotmonitor.user.model.User;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,7 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,7 +88,7 @@ class TrafficSensorHandlerTest {
                 .id(responseId)
                 .build();
 
-        Map<Metric, Float> readings = new HashMap<>();
+        Map<Metric, Float> readings = new EnumMap<>(Metric.class);
         readings.put(Metric.TRAFFIC_DENSITY, 200.0f);
         readings.put(Metric.AVG_SPEED, 60.0f);
 

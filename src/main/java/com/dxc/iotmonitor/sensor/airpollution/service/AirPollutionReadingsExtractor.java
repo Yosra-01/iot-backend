@@ -5,7 +5,7 @@ import com.dxc.iotmonitor.sensor.airpollution.model.AirPollutionSensorData;
 import com.dxc.iotmonitor.sensor.common.ReadingsExtractor;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 @Component
@@ -13,7 +13,7 @@ public class AirPollutionReadingsExtractor implements ReadingsExtractor<AirPollu
 
     @Override
     public Map<Metric, Float> extract(AirPollutionSensorData entity) {
-        Map<Metric, Float> readings = new HashMap<>();
+        Map<Metric, Float> readings = new EnumMap<>(Metric.class);
         readings.put(Metric.CO, entity.getCo());
         readings.put(Metric.OZONE, entity.getOzone());
         return readings;

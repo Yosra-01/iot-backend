@@ -6,15 +6,15 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.Optional;
 
-public interface SensorHandler<RQ, RS, F> {
+public interface SensorHandler<Q, R, F> {
 
-    RS save(RQ request, Optional<User> user);
+    R save(Q request, Optional<User> user);
 
-    RS getById(String id);
+    R getById(String id);
 
-    RS getLatest();
+    R getLatest();
 
     void flush();
 
-    Page<RS> getFiltered(F filters, Pageable pageable);
+    Page<R> getFiltered(F filters, Pageable pageable);
 }
