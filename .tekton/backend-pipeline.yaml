@@ -15,6 +15,20 @@ spec:
       type: string
       default: "false"
 
+    # Shared, non-secret SonarQube Cloud configuration.
+    - name: sonar-organization
+      type: string
+      default: "dxcelerators"
+
+    - name: sonar-project-key
+      type: string
+      default: "dxcelerators_iot-backend"
+
+    # Leave empty for sonarcloud.io (EU). Use "us" for sonarqube.us.
+    - name: sonar-region
+      type: string
+      default: ""
+
   workspaces:
     - name: source
 
@@ -37,6 +51,10 @@ spec:
 
         - name: revision
           value: $(params.revision)
+
+        # Preserve enough Git history for accurate Sonar SCM attribution.
+        - name: depth
+          value: "1000"
 
       workspaces:
         - name: output
@@ -72,7 +90,127 @@ spec:
               #!/usr/bin/env bash
               set -euo pipefail
 
-              mvn -B test -Dspring.profiles.active=test
+              mvn -B clean \
+                org.jacoco:jacoco-maven-plugin:0.8.15:prepare-agent \
+                test \
+                org.jacoco:jacoco-maven-plugin:0.8.15:report \
+                -Dspring.profiles.active=test
+
+              test -f target/site/jacoco/jacoco.xml
+              echo "JaCoCo report: target/site/jacoco/jacoco.xml"
+
+      workspaces:
+        - name: source
+          workspace: source
+
+    # ---------------------------------------------------------
+    # SonarQube Cloud analysis and Quality Gate
+    # Free-plan setup: main/deploy pipeline only; PRs remain test-only.
+    # ---------------------------------------------------------
+    - name: sonar-analysis
+      runAfter:
+        - test-backend
+        
+      OnError: continue
+
+      when:
+        - input: $(params.deploy)
+          operator: in
+          values:
+            - "true"
+
+      params:
+        - name: organization
+          value: $(params.sonar-organization)
+
+        - name: project-key
+          value: $(params.sonar-project-key)
+
+        - name: region
+          value: $(params.sonar-region)
+
+        - name: revision
+          value: $(params.revision)
+
+      taskSpec:
+        params:
+          - name: organization
+            type: string
+
+          - name: project-key
+            type: string
+
+          - name: region
+            type: string
+
+          - name: revision
+            type: string
+
+        workspaces:
+          - name: source
+
+        steps:
+          - name: analyze-and-check-gate
+            image: docker.io/library/maven:3.9.9-eclipse-temurin-21
+            workingDir: $(workspaces.source.path)
+
+            env:
+              - name: HOME
+                value: /tmp
+
+              - name: MAVEN_CONFIG
+                value: $(workspaces.source.path)/.m2
+
+              # Keep scanner/JRE downloads off the 1 Gi shared PVC.
+              - name: SONAR_USER_HOME
+                value: /tmp/.sonar
+
+              - name: SONAR_SCANNER_JAVA_OPTS
+                value: -Xmx512m
+
+              - name: SONAR_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: sonarcloud-credentials
+                    key: SONAR_TOKEN
+
+            script: |
+              #!/usr/bin/env bash
+              set -euo pipefail
+
+              REPORT_PATH="target/site/jacoco/jacoco.xml"
+
+              if [ ! -f "$REPORT_PATH" ]; then
+                echo "JaCoCo XML report was not generated: $REPORT_PATH"
+                exit 1
+              fi
+
+              REGION_ARGUMENT=()
+
+              if [ -n "$(params.region)" ]; then
+                REGION_ARGUMENT+=("-Dsonar.region=$(params.region)")
+              fi
+
+              cleanup() {
+                rm -rf "${SONAR_USER_HOME}" || true
+                rm -rf "${MAVEN_CONFIG}" || true
+              }
+              trap cleanup EXIT
+
+              echo "Using coverage report: $REPORT_PATH"
+
+              mvn -B \
+                "-Dmaven.repo.local=$(workspaces.source.path)/.m2/repository" \
+                org.sonarsource.scanner.maven:sonar-maven-plugin:5.5.0.6356:sonar \
+                "-Dsonar.host.url=https://sonarcloud.io" \
+                "-Dsonar.organization=$(params.organization)" \
+                "-Dsonar.projectKey=$(params.project-key)" \
+                "-Dsonar.scm.revision=$(params.revision)" \
+                "-Dsonar.sourceEncoding=UTF-8" \
+                "-Dsonar.coverage.jacoco.xmlReportPaths=${REPORT_PATH}" \
+                "-Dsonar.qualitygate.wait=true" \
+                "-Dsonar.qualitygate.timeout=300" \
+                "${REGION_ARGUMENT[@]}"
 
       workspaces:
         - name: source
@@ -84,7 +222,7 @@ spec:
     # ---------------------------------------------------------
     - name: calculate-version
       runAfter:
-        - test-backend
+        - sonar-analysis
 
       when:
         - input: $(params.deploy)
