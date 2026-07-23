@@ -531,3 +531,46 @@ spec:
               echo "Backend deployment succeeded."
               oc get deployment backend
               oc get pods -l app=backend
+    # ---------------------------------------------------------
+    # Post-deployment backend sanity checks
+    # ---------------------------------------------------------
+    - name: backend-sanity-checks
+      runAfter:
+        - deploy-backend
+
+      when:
+        - input: $(params.deploy)
+          operator: in
+          values:
+            - "true"
+
+      taskSpec:
+        workspaces:
+          - name: source
+
+        steps:
+          - name: run-newman
+            image: docker.io/postman/newman:alpine
+            workingDir: $(workspaces.source.path)
+
+            env:
+              - name: HOME
+                value: /tmp
+
+            script: |
+              #!/bin/sh
+              set -eu
+
+              test -f postman/Sensorix_SanityChecks.json
+
+              mkdir -p newman-results
+
+              newman run postman/Sensorix_SanityChecks.json \
+                --env-var "base_url=http://iot-backend-svc:8080" \
+                --reporters cli,junit \
+                --reporter-junit-export newman-results/backend-sanity.xml \
+                --bail
+
+      workspaces:
+        - name: source
+          workspace: source

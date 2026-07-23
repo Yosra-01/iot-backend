@@ -1,0 +1,1403 @@
+{
+  "info": {
+    "_postman_id": "16a53b5a-cbfa-420e-a922-84c3bd8c335f",
+    "name": "Sensorix — Sanity Check",
+    "description": "Sanity checks covering all apps's critical paths. Covers: Cleanup, Auth, Profile, Sensor Data (Traffic/AP/SL POST + GET), Polling Intervals, Settings, Alert Trigger Chain, Traffic Filtering, Sprint 4 AP/SL Filtering + Stats + Notifications. Schema validation on all Sprint 4 positive GET responses. Run top to bottom in order. Environment: base_url = http://localhost:8080.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "40399468",
+    "_collection_link": "https://go.postman.co/collection/40399468-16a53b5a-cbfa-420e-a922-84c3bd8c335f?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Delete Test User",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"User deleted or did not exist\", () => {",
+              "    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/user/delete?email=john.doe@example.com",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "user",
+            "delete"
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "john.doe@example.com"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Successful Registration",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Registraion Successful\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\npm.test(\"Message included\", function () {\r\n    pm.expect(pm.response.text()).to.include(\"User registered successfully.\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"firstName\": \"John\",\r\n  \"lastName\": \"Doe\",\r\n  \"email\": \"john.doe@example.com\",\r\n  \"password\": \"securePassword123$\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "register"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Successful Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login Successful\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\npm.test(\"Message included\", function () {\r\n    pm.expect(pm.response.text()).to.include(\"Login successful.\");\r\n});\r\n// 1. Parse the JSON response\r\nconst jsonData = pm.response.json();\r\n// 2. Set the environment variable\r\npm.environment.set(\"token\", jsonData.token);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \r\n\"email\": \"john.doe@example.com\", \r\n\"password\": \"securePassword123$\" \r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Successful Info Display",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Successful Display\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\npm.test(\"Message included\", function () {\r\n    pm.expect(pm.response.text()).to.include(\"userId\");\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/user/profile",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "user",
+            "profile"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SD001 — Traffic Sensor Valid Reading Inserted",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\n\r\npm.test(\"Response contains all expected fields\", function () {\r\n    var jsonData = pm.response.json();\r\n    pm.expect(jsonData).to.have.property('id');\r\n    pm.expect(jsonData.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);\r\n    pm.expect(jsonData.location).to.equal(\"CAIRO_RING_ROAD\");\r\n    pm.expect(jsonData.trafficDensity).to.equal(250);\r\n    pm.expect(jsonData.avgSpeed).to.equal(60.0);\r\n    pm.expect(jsonData.congestionLevel).to.equal(\"MODERATE\");\r\n});\r\n\r\n// Capture the id for GET by ID tests later\r\nvar jsonData = pm.response.json();\r\npm.environment.set(\"reading_id\", jsonData.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"location\": \"CAIRO_RING_ROAD\",\r\n  \"timestamp\": \"2026-05-08T10:00:00\",\r\n  \"trafficDensity\": 250,\r\n  \"avgSpeed\": 60.0,\r\n  \"congestionLevel\": \"MODERATE\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sensors/traffic",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "traffic"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SD056 — Traffic GET All — Valid",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});\r\npm.test(\"Response contains content array\", function () {\r\n    var jsonData = pm.response.json();\r\n    pm.expect(jsonData).to.be.an('object');\r\n    pm.expect(jsonData).to.have.property('content');\r\n    pm.expect(jsonData.content).to.be.an('array');\r\n});\r\npm.test(\"Array contains expected fields\", function () {\r\n    var jsonData = pm.response.json();\r\n    if (jsonData.length > 0) {\r\n        pm.expect(jsonData[0]).to.have.property('id');\r\n        pm.expect(jsonData[0]).to.have.property('location');\r\n        pm.expect(jsonData[0]).to.have.property('trafficDensity');\r\n        pm.expect(jsonData[0]).to.have.property('avgSpeed');\r\n        pm.expect(jsonData[0]).to.have.property('congestionLevel');\r\n    }\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/sensors/traffic",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "traffic"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SD002 — AP Sensor Valid Reading Inserted",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {\r\n    pm.response.to.have.status(201);\r\n});\r\npm.test(\"Response contains all expected fields\", function () {\r\n    var jsonData = pm.response.json();\r\n    pm.expect(jsonData).to.have.property('id');\r\n    pm.expect(jsonData.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);\r\n    pm.expect(jsonData.location).to.equal(\"CAIRO_NASR_CITY\");\r\n    pm.expect(jsonData.pm2_5).to.equal(120.5);\r\n    pm.expect(jsonData.pm10).to.equal(200.0);\r\n    pm.expect(jsonData.co).to.equal(25.0);\r\n    pm.expect(jsonData.no2).to.equal(30.0);\r\n    pm.expect(jsonData.so2).to.equal(15.0);\r\n    pm.expect(jsonData.ozone).to.equal(180.0);\r\n    pm.expect(jsonData.pollutionLevel).to.equal(\"UNHEALTHY\");\r\n});\r\nvar jsonData = pm.response.json();\r\npm.environment.set(\"reading_id\", jsonData.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n  \"location\": \"CAIRO_NASR_CITY\",\r\n  \"timestamp\": \"2026-05-08T10:00:00\",\r\n  \"pm2_5\": 120.5,\r\n  \"pm10\": 200.0,\r\n  \"co\": 25.0,\r\n  \"no2\": 30.0,\r\n  \"so2\": 15.0,\r\n  \"ozone\": 180.0,\r\n  \"pollutionLevel\": \"UNHEALTHY\"\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sensors/air-pollution",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "air-pollution"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SD065 — AP GET All — Valid",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });\r\npm.test(\"Response content is an array\", function () {\r\n    var jsonData = pm.response.json();\r\n    pm.expect(jsonData).to.have.property('content');\r\n    pm.expect(jsonData.content).to.be.an('array');\r\n    if (jsonData.content.length > 0) {\r\n        pm.expect(jsonData.content[0]).to.have.property('id');\r\n        pm.expect(jsonData.content[0]).to.have.property('pm2_5');\r\n        pm.expect(jsonData.content[0]).to.have.property('pollutionLevel');\r\n    }\r\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/sensors/air-pollution",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "air-pollution"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SD003 — SL Sensor Valid Reading Inserted",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {\n    pm.response.to.have.status(201);\n});\npm.test(\"Response contains all expected fields\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property('id');\n    pm.expect(jsonData.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);\n    pm.expect(jsonData.location).to.equal(\"CAIRO_ZAMALEK\");\n    pm.expect(jsonData.brightnessLevel).to.equal(75);\n    pm.expect(jsonData.powerConsumption).to.equal(1200.0);\n    pm.expect(jsonData.status).to.equal(\"ON\");\n});\nvar jsonData = pm.response.json();\npm.environment.set(\"reading_id\", jsonData.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"location\": \"CAIRO_ZAMALEK\",\n  \"timestamp\": \"2026-05-08T10:00:00\",\n  \"brightnessLevel\": 75,\n  \"powerConsumption\": 1200.0,\n  \"status\": \"ON\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sensors/street-lights",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "street-lights"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SD074 — SL GET All Valid",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () { pm.response.to.have.status(200); });\npm.test(\"Response content is an array\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property('content');\n    pm.expect(jsonData.content).to.be.an('array');\n    if (jsonData.content.length > 0) {\n        pm.expect(jsonData.content[0]).to.have.property('id');\n        pm.expect(jsonData.content[0]).to.have.property('brightnessLevel');\n        pm.expect(jsonData.content[0]).to.have.property('powerConsumption');\n        pm.expect(jsonData.content[0]).to.have.property('status');\n    }\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/sensors/street-lights",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "street-lights"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SD086 — GET Valid Intervals After Login (Default)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Response contains all interval fields with defaults\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property('id');\n    pm.expect(jsonData.id).to.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);\n    pm.expect(jsonData).to.have.property('trafficInterval');\n    pm.expect(jsonData).to.have.property('airPollutionInterval');\n    pm.expect(jsonData).to.have.property('streetLightInterval');\n});\npm.test(\"Default values are 5 minutes each\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData.trafficInterval).to.equal(5);\n    pm.expect(jsonData.airPollutionInterval).to.equal(5);\n    pm.expect(jsonData.streetLightInterval).to.equal(5);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/intervals",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "intervals"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SD088 — PUT Valid Values Accepted",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Response reflects new values\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property('id');\n    pm.expect(jsonData.trafficInterval).to.equal(10);\n    pm.expect(jsonData.airPollutionInterval).to.equal(15);\n    pm.expect(jsonData.streetLightInterval).to.equal(30);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"trafficInterval\": 10,\n  \"airPollutionInterval\": 15,\n  \"streetLightInterval\": 30\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/intervals",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "intervals"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SA01 — Valid Rules Accepted",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Response is array of threshold objects\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData).to.be.an('array');\n    pm.expect(jsonData.length).to.be.above(0);\n    pm.expect(jsonData[0]).to.have.property('id');\n    pm.expect(jsonData[0]).to.have.property('type');\n    pm.expect(jsonData[0]).to.have.property('metric');\n    pm.expect(jsonData[0]).to.have.property('thresholdValue');\n    pm.expect(jsonData[0]).to.have.property('alertType');\n    pm.expect(jsonData[0]).to.have.property('createdAt');\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  { \"type\": \"TRAFFIC\", \"metric\": \"TRAFFIC_DENSITY\", \"thresholdValue\": 400.0, \"alertType\": \"ABOVE\" },\n  { \"type\": \"TRAFFIC\", \"metric\": \"AVG_SPEED\", \"thresholdValue\": 100.0, \"alertType\": \"BELOW\" },\n  { \"type\": \"AIR_POLLUTION\", \"metric\": \"CO\", \"thresholdValue\": 10.0, \"alertType\": \"ABOVE\" },\n  { \"type\": \"STREET_LIGHT\", \"metric\": \"BRIGHTNESS_LEVEL\", \"thresholdValue\": 20.0, \"alertType\": \"BELOW\" }\n]",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/settings",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "settings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SA37 — GET All Rules Valid",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Response is array with expected fields\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData).to.be.an('array');\n    pm.expect(jsonData.length).to.be.above(0);\n    pm.expect(jsonData[0]).to.have.property('id');\n    pm.expect(jsonData[0]).to.have.property('type');\n    pm.expect(jsonData[0]).to.have.property('metric');\n    pm.expect(jsonData[0]).to.have.property('thresholdValue');\n    pm.expect(jsonData[0]).to.have.property('alertType');\n    pm.expect(jsonData[0]).to.have.property('createdAt');\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/settings",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "settings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-SA53-57 — Full Alert Trigger Chain",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const baseUrl = pm.environment.get(\"base_url\");\r",
+              "const token = pm.environment.get(\"token\");\r",
+              "\r",
+              "pm.sendRequest({\r",
+              "    url: baseUrl + \"/api/settings\",\r",
+              "    method: \"PUT\",\r",
+              "    header: {\r",
+              "        \"Content-Type\": \"application/json\",\r",
+              "        \"Authorization\": \"Bearer \" + token\r",
+              "    },\r",
+              "    body: {\r",
+              "        mode: \"raw\",\r",
+              "        raw: JSON.stringify([{\r",
+              "            type: \"TRAFFIC\",\r",
+              "            metric: \"TRAFFIC_DENSITY\",\r",
+              "            thresholdValue: 400.0,\r",
+              "            alertType: \"ABOVE\"\r",
+              "        }])\r",
+              "    }\r",
+              "}, function (err, res) {\r",
+              "    pm.variables.set(\"step2_status\", err ? 0 : res.code);\r",
+              "    pm.variables.set(\"step2_body\", err ? \"{}\" : res.text());\r",
+              "\r",
+              "    if (err || res.code !== 200) {\r",
+              "        return;\r",
+              "    }\r",
+              "\r",
+              "    pm.sendRequest({\r",
+              "        url: baseUrl + \"/api/sensors/traffic\",\r",
+              "        method: \"POST\",\r",
+              "        header: {\r",
+              "            \"Content-Type\": \"application/json\"\r",
+              "        },\r",
+              "        body: {\r",
+              "            mode: \"raw\",\r",
+              "            raw: JSON.stringify({\r",
+              "                location: \"CAIRO_RING_ROAD\",\r",
+              "                timestamp: \"2026-05-08T10:00:00\",\r",
+              "                trafficDensity: 480,\r",
+              "                avgSpeed: 60.0,\r",
+              "                congestionLevel: \"HIGH\"\r",
+              "            })\r",
+              "        }\r",
+              "    }, function (err2, res2) {\r",
+              "        pm.variables.set(\"step3_status\", err2 ? 0 : res2.code);\r",
+              "        pm.variables.set(\"step3_body\", err2 ? \"{}\" : res2.text());\r",
+              "    });\r",
+              "});"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "var baseUrl = pm.environment.get(\"base_url\");\r",
+              "var token = pm.environment.get(\"token\");\r",
+              "\r",
+              "// // Assert Step 1 — settings flushed (no status captured, just log)\r",
+              "// pm.test(\"Step 0 — Settings and alerts flushed\", function () {\r",
+              "//     pm.expect(true).to.be.true;\r",
+              "//     console.log(\"Flush completed before threshold setup\");\r",
+              "// });\r",
+              "\r",
+              "// Assert Step 2 — threshold configured\r",
+              "pm.test(\"Step 1 — Threshold rule configured (TRAFFIC_DENSITY ABOVE 400)\", function () {\r",
+              "    var status = parseInt(pm.variables.get(\"step2_status\"));\r",
+              "    pm.expect(status).to.equal(200, \"Threshold PUT failed\");\r",
+              "    var body = JSON.parse(pm.variables.get(\"step2_body\"));\r",
+              "    pm.expect(body).to.be.an('array');\r",
+              "    var rule = body.find(r => r.metric === 'TRAFFIC_DENSITY' && r.alertType === 'ABOVE');\r",
+              "    pm.expect(rule).to.not.be.undefined;\r",
+              "    pm.expect(rule.thresholdValue).to.equal(400.0);\r",
+              "});\r",
+              "\r",
+              "// Assert Step 3 — breaching reading inserted\r",
+              "pm.test(\"Step 2 — Breaching sensor reading inserted (trafficDensity=480)\", function () {\r",
+              "    var status = parseInt(pm.variables.get(\"step3_status\"));\r",
+              "    pm.expect(status).to.equal(201, \"Breaching reading POST failed\");\r",
+              "    var body = JSON.parse(pm.variables.get(\"step3_body\"));\r",
+              "    pm.expect(body.trafficDensity).to.equal(480);\r",
+              "});\r",
+              "\r",
+              "// Steps 4-6 — alert chain\r",
+              "setTimeout(function() {\r",
+              "    pm.sendRequest({\r",
+              "        url: baseUrl + \"/api/alerts\",\r",
+              "        method: \"GET\",\r",
+              "        header: { \"Authorization\": \"Bearer \" + token }\r",
+              "    }, function(err, res) {\r",
+              "        pm.test(\"Step 3 — Alert created for TRAFFIC_DENSITY breach\", function () {\r",
+              "            pm.expect(res.code).to.equal(200);\r",
+              "            var body = res.json();\r",
+              "            pm.expect(body).to.have.property('content');\r",
+              "            var alerts = body.content;\r",
+              "            pm.expect(alerts).to.be.an('array');\r",
+              "            var alert = alerts.find(a => a.metric === 'TRAFFIC_DENSITY' && a.alertType === 'ABOVE');\r",
+              "            pm.expect(alert).to.not.be.undefined;\r",
+              "            pm.expect(alert.triggeredValue).to.equal(480.0);\r",
+              "            pm.expect(alert.thresholdValue).to.equal(400.0);\r",
+              "            pm.environment.set(\"alert_id\", alert.id);\r",
+              "\r",
+              "            pm.sendRequest({\r",
+              "                url: baseUrl + \"/api/alerts/\" + alert.id,\r",
+              "                method: \"DELETE\",\r",
+              "                header: { \"Authorization\": \"Bearer \" + token }\r",
+              "            }, function(err2, res2) {\r",
+              "                pm.test(\"Step 4 — Alert dismissed successfully\", function () {\r",
+              "                    pm.expect(res2.code).to.equal(200);\r",
+              "                    pm.expect(res2.json().message).to.equal(\"Alert dismissed successfully.\");\r",
+              "                });\r",
+              "\r",
+              "                pm.sendRequest({\r",
+              "                    url: baseUrl + \"/api/alerts/\" + alert.id,\r",
+              "                    method: \"GET\",\r",
+              "                    header: { \"Authorization\": \"Bearer \" + token }\r",
+              "                }, function(err3, res3) {\r",
+              "                    pm.test(\"Step 5 — Alert returns 404 after dismissal\", function () {\r",
+              "                        pm.expect(res3.code).to.equal(404);\r",
+              "                        pm.expect(res3.json().message).to.equal(\"Alert not found.\");\r",
+              "                    });\r",
+              "                });\r",
+              "            });\r",
+              "        });\r",
+              "    });\r",
+              "}, 800);"
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/alerts/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "alerts",
+            ""
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-FS01 — Paginated Wrapper Present on GET /traffic",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Status 200\", () => pm.response.to.have.status(200));\npm.test(\"Paginated wrapper keys\", () => {\n  var json = pm.response.json();\n  pm.expect(json).to.have.property(\"content\");\n  pm.expect(json).to.have.property(\"pageable\");\n  pm.expect(json).to.have.property(\"totalElements\");\n  pm.expect(json).to.have.property(\"totalPages\");\n  pm.expect(json).to.have.property(\"number\");\n});\npm.test(\"Content is array\", () => pm.expect(pm.response.json().content).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/sensors/traffic",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "traffic"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Seed — POST AP Reading 1 (CAIRO_NASR_CITY)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"201\", () => pm.response.to.have.status(201));\npm.environment.set(\"ap_id_1\", pm.response.json().id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"location\": \"CAIRO_NASR_CITY\",\n  \"timestamp\": \"2026-06-01T08:00:00\",\n  \"pm2_5\": 120.5,\n  \"pm10\": 200.0,\n  \"co\": 25.0,\n  \"no2\": 30.0,\n  \"so2\": 15.0,\n  \"ozone\": 180.0,\n  \"pollutionLevel\": \"UNHEALTHY\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sensors/air-pollution",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "air-pollution"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-F14-01 — GET Default Pagination (page=0, size=20)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));\npm.test(\"Page<T> wrapper present\", () => {\n  const j = pm.response.json();\n  pm.expect(j).to.have.property(\"content\");\n  pm.expect(j).to.have.property(\"pageable\");\n  pm.expect(j).to.have.property(\"totalElements\");\n  pm.expect(j.content).to.be.an(\"array\");\n});\npm.test(\"Default page=0, size=20\", () => {\n  const p = pm.response.json().pageable;\n  pm.expect(p.pageNumber).to.equal(0);\n  pm.expect(p.pageSize).to.equal(20);\n});\n\nconst schema = JSON.parse(pm.collectionVariables.get(\"apPageSchema\"));\npm.test(\"Response matches schema\", () => {\n  pm.expect(pm.response.json()).to.have.jsonSchema(schema);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/sensors/air-pollution",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "air-pollution"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-F14-03 — GET Filter by location",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));\npm.test(\"All results match location filter\", () => {\n  pm.response.json().content.forEach(r =>\n    pm.expect(r.location).to.equal(\"CAIRO_NASR_CITY\"));\n});\n\nconst schema = JSON.parse(pm.collectionVariables.get(\"apPageSchema\"));\npm.test(\"Response matches schema\", () => {\n  pm.expect(pm.response.json()).to.have.jsonSchema(schema);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/sensors/air-pollution?location=CAIRO_NASR_CITY",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "air-pollution"
+          ],
+          "query": [
+            {
+              "key": "location",
+              "value": "CAIRO_NASR_CITY"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-F13-01 — GET /stats Valid (with date range)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));\npm.test(\"Period aggregate fields present\", () => {\n  const j = pm.response.json();\n  [\"from\",\"to\",\"totalReadings\",\"avgCo\",\"avgOzone\",\n   \"maxCo\",\"minCo\",\"maxOzone\",\"minOzone\",\n   \"alertsTriggered\",\"pollutionLevelDistribution\",\"dailyAverages\"]\n  .forEach(f => pm.expect(j).to.have.property(f));\n});\npm.test(\"dailyAverages is array\", () => {\n  pm.expect(pm.response.json().dailyAverages).to.be.an(\"array\");\n});\npm.test(\"Aggregates nullable when totalReadings=0\", () => {\n  const j = pm.response.json();\n  if (j.totalReadings === 0) {\n    pm.expect(j.avgCo).to.be.null;\n    pm.expect(j.avgOzone).to.be.null;\n  }\n});\n\nconst schema = JSON.parse(pm.collectionVariables.get(\"apStatsSchema\"));\npm.test(\"Response matches schema\", () => {\n  pm.expect(pm.response.json()).to.have.jsonSchema(schema);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/sensors/air-pollution/stats?from=2026-05-01T00:00:00&to=2026-06-30T23:59:59",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "air-pollution",
+            "stats"
+          ],
+          "query": [
+            {
+              "key": "from",
+              "value": "2026-05-01T00:00:00"
+            },
+            {
+              "key": "to",
+              "value": "2026-06-30T23:59:59"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Seed — Set CO threshold to trigger AP alert",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK — threshold set\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"type\": \"AIR_POLLUTION\",\n    \"metric\": \"CO\",\n    \"thresholdValue\": 1.0,\n    \"alertType\": \"ABOVE\"\n  }\n]",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/settings",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "settings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Seed — POST AP reading above CO threshold",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"201 — AP alert should have fired\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"location\": \"CAIRO_NASR_CITY\",\n  \"timestamp\": \"2026-06-01T12:00:00\",\n  \"pm2_5\": 50.0,\n  \"pm10\": 80.0,\n  \"co\": 45.0,\n  \"no2\": 20.0,\n  \"so2\": 10.0,\n  \"ozone\": 5.0,\n  \"pollutionLevel\": \"UNHEALTHY\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sensors/air-pollution",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "air-pollution"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-F15-01 — GET Alerts filtered by sensorType=AIR_POLLUTION",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));\npm.test(\"All alerts are AIR_POLLUTION type\", () => {\n  pm.response.json().content.forEach(a =>\n    pm.expect(a.sensorType).to.equal(\"AIR_POLLUTION\"));\n});\npm.test(\"AlertResponse includes readAt field\", () => {\n  const c = pm.response.json().content;\n  if (c.length > 0) {\n    pm.expect(c[0]).to.have.property(\"readAt\");\n    pm.expect(c[0].readAt).to.satisfy(\n      v => v === null || typeof v === \"string\");\n  }\n});\nconst c = pm.response.json().content;\nif (c.length > 0) pm.environment.set(\"ap_alert_id\", c[0].id);\n\nconst schema = JSON.parse(pm.collectionVariables.get(\"alertPageSchema\"));\npm.test(\"Response matches schema\", () => {\n  pm.expect(pm.response.json()).to.have.jsonSchema(schema);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/alerts?sensorType=AIR_POLLUTION",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "alerts"
+          ],
+          "query": [
+            {
+              "key": "sensorType",
+              "value": "AIR_POLLUTION"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-F15-03 — PATCH /{id}/read — Mark AP Alert as Read",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));\npm.test(\"Confirmed read message\", () => {\n  pm.expect(pm.response.json().message).to.equal(\"Alert marked as read.\");\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/alerts/{{ap_alert_id}}/read",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "alerts",
+            "{{ap_alert_id}}",
+            "read"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Seed — POST SL Reading 1 (CAIRO_ZAMALEK)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"201\", () => pm.response.to.have.status(201));\npm.environment.set(\"sl_id_1\", pm.response.json().id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"location\": \"CAIRO_ZAMALEK\",\n  \"timestamp\": \"2026-06-01T08:00:00\",\n  \"brightnessLevel\": 75,\n  \"powerConsumption\": 250.5,\n  \"status\": \"ON\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sensors/street-lights",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "street-lights"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-F11-01 — GET Default Pagination (page=0, size=20)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));\npm.test(\"Page<T> wrapper present\", () => {\n  const j = pm.response.json();\n  pm.expect(j).to.have.property(\"content\");\n  pm.expect(j).to.have.property(\"pageable\");\n  pm.expect(j).to.have.property(\"totalElements\");\n});\npm.test(\"Default page=0, size=20\", () => {\n  const p = pm.response.json().pageable;\n  pm.expect(p.pageNumber).to.equal(0);\n  pm.expect(p.pageSize).to.equal(20);\n});\n\nconst schema = JSON.parse(pm.collectionVariables.get(\"slPageSchema\"));\npm.test(\"Response matches schema\", () => {\n  pm.expect(pm.response.json()).to.have.jsonSchema(schema);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/sensors/street-lights",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "street-lights"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-F11-02 — GET Filter by location=CAIRO_ZAMALEK",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));\npm.test(\"All results match location filter\", () => {\n  pm.response.json().content.forEach(r =>\n    pm.expect(r.location).to.equal(\"CAIRO_ZAMALEK\"));\n});\n\nconst schema = JSON.parse(pm.collectionVariables.get(\"slPageSchema\"));\npm.test(\"Response matches schema\", () => {\n  pm.expect(pm.response.json()).to.have.jsonSchema(schema);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/sensors/street-lights?location=CAIRO_ZAMALEK",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "street-lights"
+          ],
+          "query": [
+            {
+              "key": "location",
+              "value": "CAIRO_ZAMALEK"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-F10-01 — GET /stats Valid (with date range)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));\npm.test(\"Period aggregate fields present\", () => {\n  const j = pm.response.json();\n  [\"from\",\"to\",\"totalReadings\",\"avgBrightness\",\"avgPowerConsumption\",\n   \"maxBrightness\",\"minBrightness\",\"maxPowerConsumption\",\"minPowerConsumption\",\n   \"alertsTriggered\",\"statusDistribution\",\"dailyAverages\"]\n  .forEach(f => pm.expect(j).to.have.property(f));\n});\npm.test(\"dailyAverages is array\", () => {\n  pm.expect(pm.response.json().dailyAverages).to.be.an(\"array\");\n});\npm.test(\"statusDistribution is object\", () => {\n  pm.expect(pm.response.json().statusDistribution).to.be.an(\"object\");\n});\n\nconst schema = JSON.parse(pm.collectionVariables.get(\"slStatsSchema\"));\npm.test(\"Response matches schema\", () => {\n  pm.expect(pm.response.json()).to.have.jsonSchema(schema);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/sensors/street-lights/stats?from=2026-05-01T00:00:00&to=2026-06-30T23:59:59",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "street-lights",
+            "stats"
+          ],
+          "query": [
+            {
+              "key": "from",
+              "value": "2026-05-01T00:00:00"
+            },
+            {
+              "key": "to",
+              "value": "2026-06-30T23:59:59"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Seed — Set BRIGHTNESS_LEVEL threshold",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK — threshold set\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "[\n  {\n    \"type\": \"STREET_LIGHT\",\n    \"metric\": \"BRIGHTNESS_LEVEL\",\n    \"thresholdValue\": 99.0,\n    \"alertType\": \"ABOVE\"\n  }\n]",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/settings",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "settings"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Seed — POST SL reading above threshold",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"201 — SL alert should have fired\", () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"location\": \"CAIRO_ZAMALEK\",\n  \"timestamp\": \"2026-06-01T13:00:00\",\n  \"brightnessLevel\": 100,\n  \"powerConsumption\": 300.0,\n  \"status\": \"ON\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/sensors/street-lights",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "sensors",
+            "street-lights"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-F12-01 — GET Alerts filtered by sensorType=STREET_LIGHT",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));\npm.test(\"All alerts are STREET_LIGHT type\", () => {\n  pm.response.json().content.forEach(a =>\n    pm.expect(a.sensorType).to.equal(\"STREET_LIGHT\"));\n});\npm.test(\"AlertResponse includes readAt field\", () => {\n  const c = pm.response.json().content;\n  if (c.length > 0) {\n    pm.expect(c[0]).to.have.property(\"readAt\");\n    pm.expect(c[0].readAt).to.satisfy(\n      v => v === null || typeof v === \"string\");\n  }\n});\nconst c = pm.response.json().content;\nif (c.length > 0) pm.environment.set(\"sl_alert_id\", c[0].id);\n\nconst schema = JSON.parse(pm.collectionVariables.get(\"alertPageSchema\"));\npm.test(\"Response matches schema\", () => {\n  pm.expect(pm.response.json()).to.have.jsonSchema(schema);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/alerts?sensorType=STREET_LIGHT",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "alerts"
+          ],
+          "query": [
+            {
+              "key": "sensorType",
+              "value": "STREET_LIGHT"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "TC-F12-02 — GET /count?read=false (SL unread badge)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"200 OK\", () => pm.response.to.have.status(200));\npm.test(\"Unread count is non-negative\", () => {\n  pm.expect(pm.response.json().count).to.be.a(\"number\").and.at.least(0);\n});\npm.environment.set(\"sl_unread_baseline\", pm.response.json().count);\n\nconst schema = JSON.parse(pm.collectionVariables.get(\"alertCountSchema\"));\npm.test(\"Response matches schema\", () => {\n  pm.expect(pm.response.json()).to.have.jsonSchema(schema);\n});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/alerts/count?read=false&sensorType=STREET_LIGHT",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "alerts",
+            "count"
+          ],
+          "query": [
+            {
+              "key": "read",
+              "value": "false"
+            },
+            {
+              "key": "sensorType",
+              "value": "STREET_LIGHT"
+            }
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// ===== D2: JSON Schemas (strict — additionalProperties: false everywhere) =====\n// Set once per request run as collection variables; parsed back out in each Tests tab.\n\nconst pageableSchema = {\n  type: \"object\",\n  properties: {\n    pageNumber: { type: \"integer\" },\n    pageSize: { type: \"integer\" },\n    sort: {\n      type: \"object\",\n      properties: {\n        empty: { type: \"boolean\" },\n        sorted: { type: \"boolean\" },\n        unsorted: { type: \"boolean\" }\n      },\n      required: [\"empty\", \"sorted\", \"unsorted\"],\n      additionalProperties: false\n    },\n    offset: { type: \"integer\" },\n    paged: { type: \"boolean\" },\n    unpaged: { type: \"boolean\" }\n  },\n  required: [\"pageNumber\", \"pageSize\", \"sort\", \"offset\", \"paged\", \"unpaged\"],\n  additionalProperties: false\n};\n\nconst sortSchema = {\n  type: \"object\",\n  properties: {\n    empty: { type: \"boolean\" },\n    sorted: { type: \"boolean\" },\n    unsorted: { type: \"boolean\" }\n  },\n  required: [\"empty\", \"sorted\", \"unsorted\"],\n  additionalProperties: false\n};\n\n// ---- Air Pollution ----\nconst apReadingSchema = {\n  type: \"object\",\n  properties: {\n    id: { type: \"string\" },\n    location: { type: \"string\" },\n    timestamp: { type: \"string\" },\n    pm2_5: { type: \"number\" },\n    pm10: { type: \"number\" },\n    co: { type: \"number\" },\n    no2: { type: \"number\" },\n    so2: { type: \"number\" },\n    ozone: { type: \"number\" },\n    pollutionLevel: { type: \"string\", enum: [\"GOOD\", \"MODERATE\", \"UNHEALTHY\", \"VERY_UNHEALTHY\", \"HAZARDOUS\"] }\n  },\n  required: [\"id\", \"location\", \"timestamp\", \"pm2_5\", \"pm10\", \"co\", \"no2\", \"so2\", \"ozone\", \"pollutionLevel\"],\n  additionalProperties: false\n};\n\nconst apPageSchema = {\n  type: \"object\",\n  properties: {\n    content: { type: \"array\", items: apReadingSchema },\n    pageable: pageableSchema,\n    totalElements: { type: \"integer\" },\n    totalPages: { type: \"integer\" },\n    last: { type: \"boolean\" },\n    size: { type: \"integer\" },\n    number: { type: \"integer\" },\n    sort: sortSchema,\n    first: { type: \"boolean\" },\n    numberOfElements: { type: \"integer\" },\n    empty: { type: \"boolean\" }\n  },\n  required: [\"content\", \"pageable\", \"totalElements\", \"totalPages\", \"last\", \"size\", \"number\", \"sort\", \"first\", \"numberOfElements\", \"empty\"],\n  additionalProperties: false\n};\n\nconst apStatsSchema = {\n  type: \"object\",\n  properties: {\n    from: { type: [\"string\", \"null\"] },\n    to: { type: [\"string\", \"null\"] },\n    location: { type: [\"string\", \"null\"] },\n    totalReadings: { type: \"integer\" },\n    avgCo: { type: [\"number\", \"null\"] },\n    avgOzone: { type: [\"number\", \"null\"] },\n    maxCo: { type: [\"number\", \"null\"] },\n    minCo: { type: [\"number\", \"null\"] },\n    maxOzone: { type: [\"number\", \"null\"] },\n    minOzone: { type: [\"number\", \"null\"] },\n    alertsTriggered: { type: \"integer\" },\n    pollutionLevelDistribution: { type: \"object\" },\n    dailyAverages: {\n      type: \"array\",\n      items: {\n        type: \"object\",\n        properties: {\n          date: { type: \"string\" },\n          avgCo: { type: [\"number\", \"null\"] },\n          avgOzone: { type: [\"number\", \"null\"] }\n        },\n        required: [\"date\", \"avgCo\", \"avgOzone\"],\n        additionalProperties: false\n      }\n    }\n  },\n  required: [\"from\", \"to\", \"location\", \"totalReadings\", \"avgCo\", \"avgOzone\", \"maxCo\", \"minCo\", \"maxOzone\", \"minOzone\", \"alertsTriggered\", \"pollutionLevelDistribution\", \"dailyAverages\"],\n  additionalProperties: false\n};\n\n// ---- Street Lights ----\nconst slReadingSchema = {\n  type: \"object\",\n  properties: {\n    id: { type: \"string\" },\n    location: { type: \"string\" },\n    timestamp: { type: \"string\" },\n    brightnessLevel: { type: \"integer\" },\n    powerConsumption: { type: \"number\" },\n    status: { type: \"string\", enum: [\"ON\", \"OFF\"] }\n  },\n  required: [\"id\", \"location\", \"timestamp\", \"brightnessLevel\", \"powerConsumption\", \"status\"],\n  additionalProperties: false\n};\n\nconst slPageSchema = {\n  type: \"object\",\n  properties: {\n    content: { type: \"array\", items: slReadingSchema },\n    pageable: pageableSchema,\n    totalElements: { type: \"integer\" },\n    totalPages: { type: \"integer\" },\n    last: { type: \"boolean\" },\n    size: { type: \"integer\" },\n    number: { type: \"integer\" },\n    sort: sortSchema,\n    first: { type: \"boolean\" },\n    numberOfElements: { type: \"integer\" },\n    empty: { type: \"boolean\" }\n  },\n  required: [\"content\", \"pageable\", \"totalElements\", \"totalPages\", \"last\", \"size\", \"number\", \"sort\", \"first\", \"numberOfElements\", \"empty\"],\n  additionalProperties: false\n};\n\nconst slStatsSchema = {\n  type: \"object\",\n  properties: {\n    from: { type: [\"string\", \"null\"] },\n    to: { type: [\"string\", \"null\"] },\n    location: { type: [\"string\", \"null\"] },\n    totalReadings: { type: \"integer\" },\n    avgBrightness: { type: [\"number\", \"null\"] },\n    avgPowerConsumption: { type: [\"number\", \"null\"] },\n    maxBrightness: { type: [\"number\", \"null\"] },\n    minBrightness: { type: [\"number\", \"null\"] },\n    maxPowerConsumption: { type: [\"number\", \"null\"] },\n    minPowerConsumption: { type: [\"number\", \"null\"] },\n    alertsTriggered: { type: \"integer\" },\n    statusDistribution: { type: \"object\" },\n    dailyAverages: {\n      type: \"array\",\n      items: {\n        type: \"object\",\n        properties: {\n          date: { type: \"string\" },\n          avgBrightness: { type: [\"number\", \"null\"] },\n          avgPowerConsumption: { type: [\"number\", \"null\"] }\n        },\n        required: [\"date\", \"avgBrightness\", \"avgPowerConsumption\"],\n        additionalProperties: false\n      }\n    }\n  },\n  required: [\"from\", \"to\", \"location\", \"totalReadings\", \"avgBrightness\", \"avgPowerConsumption\", \"maxBrightness\", \"minBrightness\", \"maxPowerConsumption\", \"minPowerConsumption\", \"alertsTriggered\", \"statusDistribution\", \"dailyAverages\"],\n  additionalProperties: false\n};\n\n// ---- Alerts ----\nconst alertSchema = {\n  type: \"object\",\n  properties: {\n    id: { type: \"string\" },\n    sensorType: { type: \"string\", enum: [\"TRAFFIC\", \"AIR_POLLUTION\", \"STREET_LIGHT\"] },\n    location: { type: \"string\" },\n    metric: { type: \"string\", enum: [\"TRAFFIC_DENSITY\", \"AVG_SPEED\", \"CO\", \"OZONE\", \"BRIGHTNESS_LEVEL\", \"POWER_CONSUMPTION\"] },\n    triggeredValue: { type: \"number\" },\n    thresholdValue: { type: \"number\" },\n    alertType: { type: \"string\", enum: [\"ABOVE\", \"BELOW\"] },\n    triggeredAt: { type: \"string\" },\n    readAt: { type: [\"string\", \"null\"] },\n    readingId: { type: \"string\" }\n  },\n  required: [\"id\", \"sensorType\", \"location\", \"metric\", \"triggeredValue\", \"thresholdValue\", \"alertType\", \"triggeredAt\", \"readAt\", \"readingId\"],\n  additionalProperties: false\n};\n\nconst alertPageSchema = {\n  type: \"object\",\n  properties: {\n    content: { type: \"array\", items: alertSchema },\n    pageable: pageableSchema,\n    totalElements: { type: \"integer\" },\n    totalPages: { type: \"integer\" },\n    last: { type: \"boolean\" },\n    size: { type: \"integer\" },\n    number: { type: \"integer\" },\n    sort: sortSchema,\n    first: { type: \"boolean\" },\n    numberOfElements: { type: \"integer\" },\n    empty: { type: \"boolean\" }\n  },\n  required: [\"content\", \"pageable\", \"totalElements\", \"totalPages\", \"last\", \"size\", \"number\", \"sort\", \"first\", \"numberOfElements\", \"empty\"],\n  additionalProperties: false\n};\n\nconst alertCountSchema = {\n  type: \"object\",\n  properties: {\n    count: { type: \"integer\", minimum: 0 }\n  },\n  required: [\"count\"],\n  additionalProperties: false\n};\n\n// ---- Generic error shape (400 / 401 / 404) ----\nconst errorSchema = {\n  type: \"object\",\n  properties: {\n    status: { type: \"integer\" },\n    error: { type: \"string\" },\n    message: { type: \"string\" }\n  },\n  required: [\"status\", \"error\", \"message\"],\n  additionalProperties: false\n};\n\n// Store as strings — Postman variables are always strings\npm.collectionVariables.set(\"apPageSchema\", JSON.stringify(apPageSchema));\npm.collectionVariables.set(\"apStatsSchema\", JSON.stringify(apStatsSchema));\npm.collectionVariables.set(\"slPageSchema\", JSON.stringify(slPageSchema));\npm.collectionVariables.set(\"slStatsSchema\", JSON.stringify(slStatsSchema));\npm.collectionVariables.set(\"alertPageSchema\", JSON.stringify(alertPageSchema));\npm.collectionVariables.set(\"alertCountSchema\", JSON.stringify(alertCountSchema));\npm.collectionVariables.set(\"alertSchema\", JSON.stringify(alertSchema));\npm.collectionVariables.set(\"errorSchema\", JSON.stringify(errorSchema));\n"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "apPageSchema",
+      "value": ""
+    },
+    {
+      "key": "apStatsSchema",
+      "value": ""
+    },
+    {
+      "key": "slPageSchema",
+      "value": ""
+    },
+    {
+      "key": "slStatsSchema",
+      "value": ""
+    },
+    {
+      "key": "alertPageSchema",
+      "value": ""
+    },
+    {
+      "key": "alertCountSchema",
+      "value": ""
+    },
+    {
+      "key": "alertSchema",
+      "value": ""
+    },
+    {
+      "key": "errorSchema",
+      "value": ""
+    }
+  ]
+}
