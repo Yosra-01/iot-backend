@@ -560,16 +560,30 @@ spec:
             script: |
               #!/bin/sh
               set -eu
-
-              test -f postman/Sensorix_SanityChecks.json
-
+            
+              COLLECTION="postman/Sensorix_SanityChecks.json"
+            
+              echo "Working directory:"
+              pwd
+            
+              echo "Postman files:"
+              find postman -maxdepth 2 -type f -print || true
+            
+              if [ ! -f "$COLLECTION" ]; then
+                echo "ERROR: Collection not found: $COLLECTION"
+                exit 1
+              fi
+            
               mkdir -p newman-results
-
-              newman run postman/Sensorix_SanityChecks.json \
+            
+              echo "Running Newman against http://iot-backend-svc:8080"
+            
+              newman run "$COLLECTION" \
                 --env-var "base_url=http://iot-backend-svc:8080" \
                 --reporters cli,junit \
                 --reporter-junit-export newman-results/backend-sanity.xml \
-                --bail
+                --color off \
+                --verbose
 
       workspaces:
         - name: source
