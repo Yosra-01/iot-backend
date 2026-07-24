@@ -110,9 +110,7 @@ spec:
     - name: sonar-analysis
       runAfter:
         - test-backend
-        
       onError: continue
-
       when:
         - input: $(params.deploy)
           operator: in
@@ -365,11 +363,201 @@ spec:
           workspace: dockerconfig
 
     # ---------------------------------------------------------
+    # Deploy the candidate image internally for pre-live checks
+    # ---------------------------------------------------------
+    - name: deploy-smoke-backend
+      runAfter:
+        - build-and-push
+
+      when:
+        - input: $(params.deploy)
+          operator: in
+          values:
+            - "true"
+
+      params:
+        - name: image
+          value: $(tasks.calculate-version.results.immutable-image)
+
+      taskSpec:
+        params:
+          - name: image
+            type: string
+
+        steps:
+          - name: deploy-smoke
+            image: quay.io/openshift/origin-cli:latest
+
+            env:
+              - name: HOME
+                value: /tmp
+
+            script: |
+              #!/bin/sh
+              set -eu
+
+              echo "Deploying candidate image to internal smoke environment:"
+              echo "$(params.image)"
+
+              oc apply -f - <<EOF
+              apiVersion: apps/v1
+              kind: Deployment
+              metadata:
+                name: backend-smoke
+                labels:
+                  app: backend-smoke
+              spec:
+                replicas: 1
+                strategy:
+                  type: Recreate
+                selector:
+                  matchLabels:
+                    app: backend-smoke
+                template:
+                  metadata:
+                    labels:
+                      app: backend-smoke
+                  spec:
+                    containers:
+                      - name: backend
+                        image: $(params.image)
+                        ports:
+                          - containerPort: 8080
+                        env:
+                          - name: SPRING_PROFILES_ACTIVE
+                            value: "docker"
+                          - name: SPRING_DATASOURCE_URL
+                            value: "jdbc:mysql://db:3306/iot_db"
+                          - name: SPRING_DATASOURCE_USERNAME
+                            value: "root"
+                          - name: SCHEDULER_TRAFFIC_CRON
+                            value: "0 0 0 1 1 *"
+                          - name: SCHEDULER_AIRPOLLUTION_CRON
+                            value: "0 0 0 1 1 *"
+                          - name: SCHEDULER_STREETLIGHT_CRON
+                            value: "0 0 0 1 1 *"
+                          - name: db_password
+                            valueFrom:
+                              secretKeyRef:
+                                name: sensorix-secrets
+                                key: db-password
+                          - name: jwt_secret
+                            valueFrom:
+                              secretKeyRef:
+                                name: sensorix-secrets
+                                key: jwt-secret
+                        readinessProbe:
+                          httpGet:
+                            path: /actuator/health/readiness
+                            port: 8080
+                          initialDelaySeconds: 20
+                          periodSeconds: 10
+                        livenessProbe:
+                          httpGet:
+                            path: /actuator/health/liveness
+                            port: 8080
+                          initialDelaySeconds: 30
+                          periodSeconds: 15
+              ---
+              apiVersion: v1
+              kind: Service
+              metadata:
+                name: backend-smoke
+                labels:
+                  app: backend-smoke
+              spec:
+                type: ClusterIP
+                selector:
+                  app: backend-smoke
+                ports:
+                  - port: 8080
+                    targetPort: 8080
+              EOF
+
+              if ! oc rollout status deployment/backend-smoke --timeout=300s; then
+                echo "Smoke deployment failed."
+                oc get pods -l app=backend-smoke -o wide || true
+
+                POD_NAME="$(oc get pods -l app=backend-smoke \
+                  -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)"
+
+                if [ -n "$POD_NAME" ]; then
+                  oc logs "$POD_NAME" --tail=200 || true
+                  oc describe pod "$POD_NAME" || true
+                fi
+
+                exit 1
+              fi
+
+              echo "Smoke backend is ready."
+              oc get deployment backend-smoke
+              oc get service backend-smoke
+
+    # ---------------------------------------------------------
+    # Run sanity checks against the candidate before live deploy
+    # ---------------------------------------------------------
+    - name: backend-sanity-checks
+      runAfter:
+        - deploy-smoke-backend
+
+      when:
+        - input: $(params.deploy)
+          operator: in
+          values:
+            - "true"
+
+      taskSpec:
+        workspaces:
+          - name: source
+
+        steps:
+          - name: run-newman
+            image: docker.io/postman/newman:alpine
+            workingDir: $(workspaces.source.path)
+
+            env:
+              - name: HOME
+                value: /tmp
+
+            script: |
+              #!/bin/sh
+              set -eu
+
+              COLLECTION="postman/Sensorix_SanityChecks.json"
+              BASE_URL="http://backend-smoke:8080"
+
+              echo "Working directory:"
+              pwd
+
+              echo "Postman files:"
+              find postman -maxdepth 2 -type f -print || true
+
+              if [ ! -f "$COLLECTION" ]; then
+                echo "ERROR: Collection not found: $COLLECTION"
+                exit 1
+              fi
+
+              mkdir -p newman-results
+
+              echo "Running Newman against $BASE_URL"
+
+              newman run "$COLLECTION" \
+                --env-var "base_url=$BASE_URL" \
+                --reporters cli,junit \
+                --reporter-junit-export newman-results/backend-sanity.xml \
+                --color off \
+                --verbose
+
+      workspaces:
+        - name: source
+          workspace: source
+
+    # ---------------------------------------------------------
     # Add version, commit and latest aliases
     # ---------------------------------------------------------
     - name: publish-additional-tags
       runAfter:
-        - build-and-push
+        - backend-sanity-checks
 
       when:
         - input: $(params.deploy)
@@ -531,13 +719,10 @@ spec:
               echo "Backend deployment succeeded."
               oc get deployment backend
               oc get pods -l app=backend
-    # ---------------------------------------------------------
-    # Post-deployment backend sanity checks
-    # ---------------------------------------------------------
-    - name: backend-sanity-checks
-      runAfter:
-        - deploy-backend
 
+  finally:
+    # Always remove the temporary candidate deployment and service.
+    - name: cleanup-smoke-backend
       when:
         - input: $(params.deploy)
           operator: in
@@ -545,13 +730,9 @@ spec:
             - "true"
 
       taskSpec:
-        workspaces:
-          - name: source
-
         steps:
-          - name: run-newman
-            image: docker.io/postman/newman:alpine
-            workingDir: $(workspaces.source.path)
+          - name: cleanup
+            image: quay.io/openshift/origin-cli:latest
 
             env:
               - name: HOME
@@ -560,31 +741,10 @@ spec:
             script: |
               #!/bin/sh
               set -eu
-            
-              COLLECTION="postman/Sensorix_SanityChecks.json"
-            
-              echo "Working directory:"
-              pwd
-            
-              echo "Postman files:"
-              find postman -maxdepth 2 -type f -print || true
-            
-              if [ ! -f "$COLLECTION" ]; then
-                echo "ERROR: Collection not found: $COLLECTION"
-                exit 1
-              fi
-            
-              mkdir -p newman-results
-            
-              echo "Running Newman against http://iot-backend-svc:8080"
-            
-              newman run "$COLLECTION" \
-                --env-var "base_url=http://iot-backend-svc:8080" \
-                --reporters cli,junit \
-                --reporter-junit-export newman-results/backend-sanity.xml \
-                --color off \
-                --verbose
 
-      workspaces:
-        - name: source
-          workspace: source
+              oc delete deployment/backend-smoke \
+                service/backend-smoke \
+                --ignore-not-found=true \
+                --wait=false
+
+              echo "Smoke environment cleanup requested."
