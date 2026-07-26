@@ -66,6 +66,7 @@ class AuthServiceTest {
         User savedUser = new User();
         savedUser.setEmail("john.doe@example.com");
         AuthResponse expectedResponse = new AuthResponse();
+        expectedResponse.setProfilePicture(null);
 
         when(userRepository.existsByEmailIgnoreCase(request.getEmail())).thenReturn(false);
         when(authMapper.toEntity(request)).thenReturn(mappedUser);
@@ -81,6 +82,7 @@ class AuthServiceTest {
         assertNotNull(result);
         assertEquals("mocked-jwt-token", result.getToken());
         assertEquals("User registered successfully.", result.getMessage());
+        assertNull(result.getProfilePicture());
         verify(userRepository, times(1)).save(mappedUser);
     }
 
@@ -115,8 +117,10 @@ class AuthServiceTest {
         User existingUser = new User();
         existingUser.setEmail("john.doe@example.com");
         existingUser.setPassword("hashedPassword");
+        existingUser.setProfilePicture("https://cdn.example.com/profile-pictures/user/pic.jpeg");
 
         AuthResponse expectedResponse = new AuthResponse();
+        expectedResponse.setProfilePicture(existingUser.getProfilePicture());
 
         when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.of(existingUser));
         when(passwordEncoder.matches(request.getPassword(), existingUser.getPassword())).thenReturn(true);
@@ -131,6 +135,7 @@ class AuthServiceTest {
         assertNotNull(result);
         assertEquals("mocked-jwt-token", result.getToken());
         assertEquals("Login successful.", result.getMessage());
+        assertEquals(existingUser.getProfilePicture(), result.getProfilePicture());
         verify(pollingIntervalService).createDefault(existingUser);
     }
 

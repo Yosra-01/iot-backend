@@ -7,9 +7,7 @@ import com.dxc.iotmonitor.user.dto.UpdatePasswordRequest;
 import com.dxc.iotmonitor.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,9 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URI;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -57,29 +53,24 @@ public class UserController {
             throw new TooManyRequestsException("Too many requests. Please try again later.");
         }
 
-        userService.updateProfilePicture(email, file);
-        return ResponseEntity.ok(Map.of("message", "Profile picture updated successfully."));
+        String profilePicture = userService.updateProfilePicture(email, file);
+        return ResponseEntity.ok(Map.of(
+                "message", "Profile picture updated successfully.",
+                "profilePicture", profilePicture));
     }
 
     // Get User Profile Picture
     @GetMapping("/profile/picture")
-    public ResponseEntity<Resource> getProfilePicture() throws TooManyRequestsException, IOException {
+    public ResponseEntity<Void> getProfilePicture() throws TooManyRequestsException {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         if (!rateLimitService.tryConsumeProfile(email)) {
             throw new TooManyRequestsException("Too many requests. Please try again later.");
         }
 
-        Resource resource = userService.getProfilePicture(email);
-        Path filePath = Paths.get(resource.getURI());
-        String contentType = Files.probeContentType(filePath);
-
-        MediaType mediaType = contentType != null
-                ? MediaType.parseMediaType(contentType)
-                : MediaType.APPLICATION_OCTET_STREAM;
-
-        return ResponseEntity.ok()
-                .contentType(mediaType)
-                .body(resource);
+        URI imageUri = userService.getProfilePictureUri(email);
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .location(imageUri)
+                .build();
     }
 
     //Change User Password

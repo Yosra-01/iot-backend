@@ -17,11 +17,10 @@ ENV TZ=Africa/Cairo
 COPY --from=build /app/target/*.jar app.jar
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
-RUN mkdir -p /var/lib/iotmonitor/profile-pictures \
-  && sed -i 's/\r$//' /docker-entrypoint.sh \
+RUN sed -i 's/\r$//' /docker-entrypoint.sh \
   && chmod 755 /docker-entrypoint.sh \
   && addgroup -S spring && adduser -S spring -G spring \
-  && chown -R spring:spring /app /docker-entrypoint.sh /var/lib/iotmonitor
+  && chown -R spring:spring /app /docker-entrypoint.sh
 
 USER spring:spring
 
