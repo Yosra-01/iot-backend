@@ -399,6 +399,27 @@ spec:
               echo "Deploying candidate image to internal smoke environment:"
               echo "$(params.image)"
 
+              R2_SECRET_NAME="sensorix-secrets"
+              REQUIRED_R2_SECRET_KEYS="
+              r2-account-id
+              r2-bucket
+              r2-access-key-id
+              r2-secret-access-key
+              r2-public-base-url
+              "
+
+              if ! oc get secret "$R2_SECRET_NAME" >/dev/null 2>&1; then
+                echo "ERROR: Missing R2 secret: ${R2_SECRET_NAME}"
+                exit 1
+              fi
+
+              for key in $REQUIRED_R2_SECRET_KEYS; do
+                if [ -z "$(oc get secret "$R2_SECRET_NAME" -o "jsonpath={.data['$key']}" 2>/dev/null)" ]; then
+                  echo "ERROR: Missing R2 secret key: ${key}"
+                  exit 1
+                fi
+              done
+
               oc apply -f - <<EOF
               apiVersion: apps/v1
               kind: Deployment
@@ -436,6 +457,31 @@ spec:
                             value: "0 0 0 1 1 *"
                           - name: SCHEDULER_STREETLIGHT_CRON
                             value: "0 0 0 1 1 *"
+                          - name: IOT_R2_ACCOUNT_ID
+                            valueFrom:
+                              secretKeyRef:
+                                name: sensorix-secrets
+                                key: r2-account-id
+                          - name: IOT_R2_BUCKET
+                            valueFrom:
+                              secretKeyRef:
+                                name: sensorix-secrets
+                                key: r2-bucket
+                          - name: IOT_R2_ACCESS_KEY_ID
+                            valueFrom:
+                              secretKeyRef:
+                                name: sensorix-secrets
+                                key: r2-access-key-id
+                          - name: IOT_R2_SECRET_ACCESS_KEY
+                            valueFrom:
+                              secretKeyRef:
+                                name: sensorix-secrets
+                                key: r2-secret-access-key
+                          - name: IOT_R2_PUBLIC_BASE_URL
+                            valueFrom:
+                              secretKeyRef:
+                                name: sensorix-secrets
+                                key: r2-public-base-url
                           - name: db_password
                             valueFrom:
                               secretKeyRef:
