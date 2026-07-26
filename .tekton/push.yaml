@@ -1,0 +1,47 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  name: backend-push
+
+  annotations:
+    pipelinesascode.tekton.dev/max-keep-runs: "2"
+    pipelinesascode.tekton.dev/on-event: "[push]"
+    pipelinesascode.tekton.dev/on-target-branch: "[refs/heads/main]"
+    pipelinesascode.tekton.dev/pipeline: ".tekton/backend-pipeline.yaml"
+    pipelinesascode.tekton.dev/task: "git-clone"
+
+spec:
+  taskRunTemplate:
+    serviceAccountName: pipeline
+
+  pipelineRef:
+    name: backend-pipeline
+
+  params:
+    - name: repo-url
+      value: "{{ repo_url }}"
+
+    - name: revision
+      value: "{{ revision }}"
+
+    - name: deploy
+      value: "true"
+
+  workspaces:
+    - name: source
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce
+
+          resources:
+            requests:
+              storage: 2Gi
+
+    - name: basic-auth
+      secret:
+        secretName: "{{ git_auth_secret }}"
+
+    - name: dockerconfig
+      secret:
+        secretName: dockerhub-credentials
