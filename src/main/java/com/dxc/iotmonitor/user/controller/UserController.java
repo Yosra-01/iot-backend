@@ -28,6 +28,8 @@ import java.util.Map;
 @RestController
 public class UserController {
 
+    private static final String MESSAGE_KEY = "message";
+
     private final UserService userService;
     private final RateLimitService rateLimitService;
 
@@ -45,7 +47,7 @@ public class UserController {
 
     //Change User Profile Picture
     @PatchMapping("/profile/picture")
-    public ResponseEntity<?> updateProfilePicture(@RequestParam("file") MultipartFile file)
+    public ResponseEntity<Map<String, String>> updateProfilePicture(@RequestParam("file") MultipartFile file)
             throws TooManyRequestsException, IOException {
 
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -54,9 +56,10 @@ public class UserController {
         }
 
         String profilePicture = userService.updateProfilePicture(email, file);
+
         return ResponseEntity.ok(Map.of(
-                "message", "Profile picture updated successfully.",
-                "profilePicture", profilePicture));
+        MESSAGE_KEY, "Profile picture updated successfully.",
+        "profilePicture", profilePicture));
     }
 
     // Get User Profile Picture
@@ -75,7 +78,7 @@ public class UserController {
 
     //Change User Password
     @PatchMapping("/profile/password")
-    public ResponseEntity<?> updatePassword(@RequestBody @Valid UpdatePasswordRequest request)
+    public ResponseEntity<Map<String, String>> updatePassword(@RequestBody @Valid UpdatePasswordRequest request)
             throws TooManyRequestsException {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
 
@@ -84,13 +87,13 @@ public class UserController {
         }
 
         userService.updatePassword(email, request);
-        return ResponseEntity.ok(Map.of("message", "Password updated successfully."));
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Password updated successfully."));
     }
 
     //Delete User By email -> for automated testing purposes
     @DeleteMapping("/delete")
-    public ResponseEntity<?> deleteUserByEmail(@RequestParam String email) {
+    public ResponseEntity<Map<String, String>> deleteUserByEmail(@RequestParam String email) {
         userService.deleteUserByEmail(email);
-        return ResponseEntity.ok(Map.of("message", "User deleted successfully."));
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, "User deleted successfully."));
     }
 }

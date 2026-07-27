@@ -1,6 +1,7 @@
 package com.dxc.iotmonitor.sensor.airpollution.dto;
 
 import com.dxc.iotmonitor.enums.PollutionLevel;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,7 +26,8 @@ public class AirPollutionSensorRequest {
     @NotNull(message = "pm2_5 is required")
     @DecimalMin(value = "0.0", message = "pm2_5 must be between 0 and 500")
     @DecimalMax(value = "500.0", message = "pm2_5 must be between 0 and 500")
-    private Float pm2_5;
+    @JsonProperty("pm2_5")
+    private Float pm25;
 
     @NotNull(message = "pm10 is required")
     @DecimalMin(value = "0.0", message = "pm10 must be between 0 and 600")

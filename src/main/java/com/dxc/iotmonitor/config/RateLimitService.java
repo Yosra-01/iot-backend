@@ -15,34 +15,18 @@ public class RateLimitService {
     private final Map<String, Bucket> loginBuckets = new ConcurrentHashMap<>();
     private final Map<String, Bucket> profileBuckets = new ConcurrentHashMap<>();
 
-    private Bucket createRegisterBucket() {
+    private Bucket createBucket(long capacity, long refillTokens, Duration refillPeriod) {
         Bandwidth limit = Bandwidth.builder()
-                .capacity(10)
-                .refillIntervally(10, Duration.ofMinutes(1))
-                .build();
-        return Bucket.builder().addLimit(limit).build();
-    }
-
-    private Bucket createLoginBucket() {
-        Bandwidth limit = Bandwidth.builder()
-                .capacity(10)
-                .refillIntervally(10, Duration.ofMinutes(1))
-                .build();
-        return Bucket.builder().addLimit(limit).build();
-    }
-
-    private Bucket createProfileBucket(){
-        Bandwidth limit = Bandwidth.builder()
-                .capacity(10)
-                .refillIntervally(10, Duration.ofMinutes(1))
+                .capacity(capacity)
+                .refillIntervally(refillTokens, refillPeriod)
                 .build();
         return Bucket.builder().addLimit(limit).build();
     }
 
     public boolean tryConsume(String endpoint, String ip) {
         Bucket bucket = switch (endpoint) {
-            case "register" -> registerBuckets.computeIfAbsent(ip, k -> createRegisterBucket());
-            case "login" -> loginBuckets.computeIfAbsent(ip, k -> createLoginBucket());
+            case "register" -> registerBuckets.computeIfAbsent(ip, k -> createBucket(10, 10, Duration.ofMinutes(1)));
+            case "login" -> loginBuckets.computeIfAbsent(ip, k -> createBucket(10, 10, Duration.ofMinutes(1)));
             default -> null;
         };
 
@@ -51,7 +35,7 @@ public class RateLimitService {
     }
 
     public boolean tryConsumeProfile(String email) {
-        Bucket bucket = profileBuckets.computeIfAbsent(email, k -> createProfileBucket());
+        Bucket bucket = profileBuckets.computeIfAbsent(email, k -> createBucket(10, 10, Duration.ofMinutes(1)));
         return bucket.tryConsume(1);
     }
 }

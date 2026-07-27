@@ -8,66 +8,65 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Slf4j
 @Component
 public class AirPollutionValidator implements SensorValidator<AirPollutionSensorRequest> {
 
+    private static final String VALIDATION_FAILED_LOG = "[AirPollutionValidator][validate] validation failed: {}";
+
     @Override
     public void validate(AirPollutionSensorRequest request) {
+        validateLocation(request);
+        validateTimestamp(request);
+        validateRange(request.getPm25(), 0, 500, "pm2_5");
+        validateRange(request.getPm10(), 0, 600, "pm10");
+        validateRange(request.getCo(), 0, 50, "co");
+        validateRange(request.getNo2(), 0, 200, "no2");
+        validateRange(request.getSo2(), 0, 350, "so2");
+        validateRange(request.getOzone(), 0, 300, "ozone");
+        validatePollutionLevel(request);
+    }
+
+    private void validateLocation(AirPollutionSensorRequest request) {
         if (request.getLocation() == null || request.getLocation().isBlank()) {
             String message = "location is required";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
+            log.warn(VALIDATION_FAILED_LOG, message);
             throw new IllegalArgumentException(message);
         }
         if (!SensorLocations.isValid(SensorType.AIR_POLLUTION, request.getLocation())) {
             String message = "invalid location for this sensor type";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
+            log.warn(VALIDATION_FAILED_LOG, message);
             throw new IllegalArgumentException(message);
         }
+    }
+
+    private void validateTimestamp(AirPollutionSensorRequest request) {
         if (request.getTimestamp() == null) {
             String message = "timestamp is required";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
+            log.warn(VALIDATION_FAILED_LOG, message);
             throw new IllegalArgumentException(message);
         }
-        if (request.getTimestamp().isAfter(LocalDateTime.now())) {
+        if (request.getTimestamp().isAfter(LocalDateTime.now(ZoneId.of("Africa/Cairo")))) {
             String message = "timestamp must not be in the future";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
+            log.warn(VALIDATION_FAILED_LOG, message);
             throw new IllegalArgumentException(message);
         }
-        if (request.getPm2_5() == null || request.getPm2_5() < 0 || request.getPm2_5() > 500) {
-            String message = "pm2_5 must be between 0 and 500";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
+    }
+
+    private void validateRange(Float value, float min, float max, String fieldName) {
+        if (value == null || value < min || value > max) {
+            String message = fieldName + " must be between " + (int) min + " and " + (int) max;
+            log.warn(VALIDATION_FAILED_LOG, message);
             throw new IllegalArgumentException(message);
         }
-        if (request.getPm10() == null || request.getPm10() < 0 || request.getPm10() > 600) {
-            String message = "pm10 must be between 0 and 600";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
-            throw new IllegalArgumentException(message);
-        }
-        if (request.getCo() == null || request.getCo() < 0 || request.getCo() > 50) {
-            String message = "co must be between 0 and 50";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
-            throw new IllegalArgumentException(message);
-        }
-        if (request.getNo2() == null || request.getNo2() < 0 || request.getNo2() > 200) {
-            String message = "no2 must be between 0 and 200";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
-            throw new IllegalArgumentException(message);
-        }
-        if (request.getSo2() == null || request.getSo2() < 0 || request.getSo2() > 350) {
-            String message = "so2 must be between 0 and 350";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
-            throw new IllegalArgumentException(message);
-        }
-        if (request.getOzone() == null || request.getOzone() < 0 || request.getOzone() > 300) {
-            String message = "ozone must be between 0 and 300";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
-            throw new IllegalArgumentException(message);
-        }
+    }
+
+    private void validatePollutionLevel(AirPollutionSensorRequest request) {
         if (request.getPollutionLevel() == null) {
             String message = "pollutionLevel is required";
-            log.warn("[AirPollutionValidator][validate] validation failed: {}", message);
+            log.warn(VALIDATION_FAILED_LOG, message);
             throw new IllegalArgumentException(message);
         }
     }

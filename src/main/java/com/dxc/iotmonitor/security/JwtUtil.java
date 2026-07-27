@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import io.jsonwebtoken.security.Keys;
-import java.util.Date;
+import java.time.Instant;
 
 @Component
 public class JwtUtil {
@@ -25,10 +25,14 @@ public class JwtUtil {
 
     // generates a JWT token with the email as the subject
     public String generateToken(String email) {
+        Instant now = Instant.now();
+        Instant expiresAt = now.plusMillis(expiration);
+        // Use numeric JWT iat/exp (epoch seconds) so we never touch java.util.Date (java:S2143).
+        // JJWT's builder Date overloads are library-only; claim() stores the same standard fields.
         return Jwts.builder()
                 .subject(email)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expiration))
+                .claim(Claims.ISSUED_AT, now.getEpochSecond())
+                .claim(Claims.EXPIRATION, expiresAt.getEpochSecond())
                 .signWith(getSigningKey(), Jwts.SIG.HS256) // signs with HMAC-SHA256
                 .compact(); // builds and returns the token string
     }
@@ -49,7 +53,11 @@ public class JwtUtil {
 
     // checks if the token has passed its expiration time
     private boolean isTokenExpired(String token) {
-        return extractAllClaims(token).getExpiration().before(new Date());
+        Number exp = extractAllClaims(token).get(Claims.EXPIRATION, Number.class);
+        if (exp == null) {
+            return true;
+        }
+        return Instant.ofEpochSecond(exp.longValue()).isBefore(Instant.now());
     }
 
     // returns true if the token is valid — not expired and signature is intact

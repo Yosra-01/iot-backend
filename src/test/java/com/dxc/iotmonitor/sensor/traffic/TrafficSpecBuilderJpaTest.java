@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,7 +37,7 @@ class TrafficSpecBuilderJpaTest {
                 .trafficDensity(200)
                 .avgSpeed(60.0f)
                 .congestionLevel(CongestionLevel.MODERATE)
-                .timestamp(LocalDateTime.of(2026, 6, 1, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 1, 10, 0, 0))
                 .build();
 
         row2 = TrafficSensorData.builder()
@@ -44,7 +45,7 @@ class TrafficSpecBuilderJpaTest {
                 .trafficDensity(400)
                 .avgSpeed(30.0f)
                 .congestionLevel(CongestionLevel.HIGH)
-                .timestamp(LocalDateTime.of(2026, 6, 2, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 2, 10, 0, 0))
                 .build();
 
         row3 = TrafficSensorData.builder()
@@ -52,7 +53,7 @@ class TrafficSpecBuilderJpaTest {
                 .trafficDensity(100)
                 .avgSpeed(80.0f)
                 .congestionLevel(CongestionLevel.LOW)
-                .timestamp(LocalDateTime.of(2026, 6, 3, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 3, 10, 0, 0))
                 .build();
 
         repository.saveAll(List.of(row1, row2, row3));
@@ -102,8 +103,8 @@ class TrafficSpecBuilderJpaTest {
     void filterByTimestampRange_returnsInWindow() {
         var params = new TrafficFilterParams(
                 null, null, null, null, null, null,
-                LocalDateTime.of(2026, 6, 2, 0, 0, 0),
-                LocalDateTime.of(2026, 6, 3, 23, 59, 59));
+                LocalDateTime.of(2026, Month.JUNE, 2, 0, 0, 0),
+                LocalDateTime.of(2026, Month.JUNE, 3, 23, 59, 59));
         var results = repository.findAll(specBuilder.build(params));
 
         assertEquals(2, results.size());

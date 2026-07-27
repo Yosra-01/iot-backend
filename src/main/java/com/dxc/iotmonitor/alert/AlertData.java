@@ -25,6 +25,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 @Entity
@@ -77,7 +78,7 @@ public class AlertData {
     @PrePersist
     protected void setTriggeredAtOnPersist() {
         if (triggeredAt == null) {
-            triggeredAt = LocalDateTime.now();
+            triggeredAt = LocalDateTime.now(ZoneId.of("Africa/Cairo"));
         }
     }
 }

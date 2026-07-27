@@ -23,15 +23,19 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class AlertService {
+
+    private static final String ALERT_NOT_FOUND = "Alert not found.";
 
     private final AlertRepository alertRepository;
     private final AlertMapper alertMapper;
@@ -47,7 +51,7 @@ public class AlertService {
 
     public AlertResponse findById(UUID id, User user) {
         AlertData entity = alertRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Alert not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(ALERT_NOT_FOUND));
         assertOwnedByUser(entity, user, id);
         return alertMapper.toResponse(entity);
     }
@@ -60,7 +64,7 @@ public class AlertService {
 
     public void deleteById(UUID id, User user) {
         AlertData entity = alertRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Alert not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(ALERT_NOT_FOUND));
         assertOwnedByUser(entity, user, id);
         alertRepository.deleteById(id);
         log.info("[AlertService][deleteById] Alert dismissed: id={} by user={}", id, user.getUserId());
@@ -81,10 +85,10 @@ public class AlertService {
     @Transactional
     public void markAsRead(UUID id, User user) {
         AlertData alert = alertRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Alert not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(ALERT_NOT_FOUND));
         assertOwnedByUser(alert, user, id);
         if (alert.getReadAt() == null) {
-            alert.setReadAt(LocalDateTime.now());
+            alert.setReadAt(LocalDateTime.now(ZoneId.of("Africa/Cairo")));
             alertRepository.save(alert);
             log.info("[AlertService][markAsRead] Alert marked as read: id={} by user={}", id, user.getUserId());
         }
@@ -96,47 +100,55 @@ public class AlertService {
         List<Settings> settings = settingsRepository.findByUser(user);
         List<AlertData> alerts = new ArrayList<>();
         for (Settings setting : settings) {
-            if (setting.getType() != type) {
-                continue;
-            }
-            if (!values.containsKey(setting.getMetric())) {
-                continue;
-            }
-            Float actualValue = values.get(setting.getMetric());
-            if (actualValue == null) {
-                continue;
-            }
-            boolean breach = false;
-            if (setting.getAlertType() == AlertType.ABOVE && actualValue > setting.getThresholdValue()) {
-                breach = true;
-            }
-            if (setting.getAlertType() == AlertType.BELOW && actualValue < setting.getThresholdValue()) {
-                breach = true;
-            }
-            if (breach) {
-                AlertData alert = AlertData.builder()
-                        .user(user)
-                        .sensorType(type)
-                        .location(location)
-                        .metric(setting.getMetric())
-                        .triggeredValue(actualValue)
-                        .thresholdValue(setting.getThresholdValue())
-                        .alertType(setting.getAlertType())
-                        .readingId(readingId)
-                        .build();
-                alerts.add(alert);
-                log.info(
-                        "[AlertService][checkAndTrigger] ALERT TRIGGERED — type={} location={} metric={} value={} threshold={} alertType={}",
-                        type,
-                        location,
-                        setting.getMetric(),
-                        actualValue,
-                        setting.getThresholdValue(),
-                        setting.getAlertType());
-            }
+            isBreached(setting, type, values).ifPresent(actualValue ->
+                    alerts.add(buildAlert(setting, type, location, user, readingId, actualValue)));
         }
         if (!alerts.isEmpty()) {
             alertRepository.saveAll(alerts);
         }
+    }
+
+    private Optional<Float> isBreached(Settings setting, SensorType type, Map<Metric, Float> values) {
+        if (setting.getType() != type) {
+            return Optional.empty();
+        }
+        if (!values.containsKey(setting.getMetric())) {
+            return Optional.empty();
+        }
+        Float actualValue = values.get(setting.getMetric());
+        if (actualValue == null) {
+            return Optional.empty();
+        }
+        boolean breach = false;
+        if (setting.getAlertType() == AlertType.ABOVE && actualValue > setting.getThresholdValue()) {
+            breach = true;
+        }
+        if (setting.getAlertType() == AlertType.BELOW && actualValue < setting.getThresholdValue()) {
+            breach = true;
+        }
+        return breach ? Optional.of(actualValue) : Optional.empty();
+    }
+
+    private AlertData buildAlert(Settings setting, SensorType type, String location, User user,
+                                 UUID readingId, Float actualValue) {
+        AlertData alert = AlertData.builder()
+                .user(user)
+                .sensorType(type)
+                .location(location)
+                .metric(setting.getMetric())
+                .triggeredValue(actualValue)
+                .thresholdValue(setting.getThresholdValue())
+                .alertType(setting.getAlertType())
+                .readingId(readingId)
+                .build();
+        log.info(
+                "[AlertService][checkAndTrigger] ALERT TRIGGERED — type={} location={} metric={} value={} threshold={} alertType={}",
+                type,
+                location,
+                setting.getMetric(),
+                actualValue,
+                setting.getThresholdValue(),
+                setting.getAlertType());
+        return alert;
     }
 }

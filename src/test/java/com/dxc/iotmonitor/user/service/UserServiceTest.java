@@ -160,24 +160,24 @@ class UserServiceTest {
     }
 
     @Test
-    void updateProfilePicture_storageValidationFailure_doesNotSave() throws IOException {
-        String email = "john.doe@example.com";
-        User user = new User();
-        user.setEmail(email);
-        user.setUserId(UUID.randomUUID());
-        MockMultipartFile file = imageFile();
+void updateProfilePictureStorageValidationFailureDoesNotSave() throws IOException {
+    String email = "john.doe@example.com";
+    User user = new User();
+    user.setEmail(email);
+    user.setUserId(UUID.randomUUID());
+    MockMultipartFile file = imageFile();
 
-        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
-        when(profilePictureStorageService.upload(user.getUserId(), file))
-                .thenThrow(new IllegalArgumentException("Only image files are allowed."));
+    when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
+    when(profilePictureStorageService.upload(user.getUserId(), file))
+            .thenThrow(new IllegalArgumentException("Only image files are allowed."));
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.updateProfilePicture(email, file));
+    IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> userService.updateProfilePicture(email, file));
 
-        assertEquals("Only image files are allowed.", exception.getMessage());
-        verify(userRepository, never()).save(any());
-    }
+    assertEquals("Only image files are allowed.", exception.getMessage());
+    verify(userRepository, never()).save(any());
+}
 
     @Test
     void getProfilePictureUri_userNotFound_throwsResourceNotFoundException() {

@@ -39,7 +39,7 @@ public class AirPollutionSensorData {
     private LocalDateTime timestamp;
 
     @Column(name = "pm2_5", nullable = false)
-    private Float pm2_5;
+    private Float pm25;
 
     @Column(nullable = false)
     private Float pm10;

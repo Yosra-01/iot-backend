@@ -19,10 +19,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final String BAD_REQUEST = "Bad Request";
+    private static final String INVALID_FIELD_VALUE = "Invalid value for field.";
 
     //409 Conflict
     @ExceptionHandler(DuplicateEmailException.class)
@@ -79,7 +83,7 @@ public class GlobalExceptionHandler {
 
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
+                BAD_REQUEST,
                 messages
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
@@ -100,7 +104,7 @@ public class GlobalExceptionHandler {
 
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
+                BAD_REQUEST,
                 messages
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
@@ -128,7 +132,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e) {
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
+                BAD_REQUEST,
                 e.getMessage()
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
@@ -139,7 +143,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleHttpMessageNotReadable(HttpMessageNotReadableException e) {
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
+                BAD_REQUEST,
                 resolveHttpMessageNotReadableMessage(e)
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
@@ -148,29 +152,37 @@ public class GlobalExceptionHandler {
     private String resolveHttpMessageNotReadableMessage(HttpMessageNotReadableException e) {
         Throwable cause = e.getCause();
         while (cause != null) {
-            if (cause instanceof InvalidFormatException ife && ife.getTargetType() != null
-                    && ife.getTargetType().isEnum()) {
-                return "invalid metric for this sensor type";
-            }
-            if (cause instanceof MismatchedInputException) {
-                return "Invalid value for field.";
-            }
-            if (cause instanceof InvalidFormatException) {
-                return "Invalid value for field.";
-            }
-            String msg = cause.getMessage();
-            if (msg != null) {
-                String lower = msg.toLowerCase();
-                if (lower.contains("enum") && lower.contains("value")) {
-                    return "invalid metric for this sensor type";
-                }
-                if (lower.contains("floating point") || lower.contains("integral type")) {
-                    return "Invalid value for field.";
-                }
+            Optional<String> classified = classifyCause(cause);
+            if (classified.isPresent()) {
+                return classified.get();
             }
             cause = cause.getCause();
         }
-        return "Invalid value for field.";
+        return INVALID_FIELD_VALUE;
+    }
+
+    private Optional<String> classifyCause(Throwable cause) {
+        if (cause instanceof InvalidFormatException ife && ife.getTargetType() != null
+                && ife.getTargetType().isEnum()) {
+            return Optional.of("invalid metric for this sensor type");
+        }
+        if (cause instanceof MismatchedInputException) {
+            return Optional.of(INVALID_FIELD_VALUE);
+        }
+        if (cause instanceof InvalidFormatException) {
+            return Optional.of(INVALID_FIELD_VALUE);
+        }
+        String msg = cause.getMessage();
+        if (msg != null) {
+            String lower = msg.toLowerCase();
+            if (lower.contains("enum") && lower.contains("value")) {
+                return Optional.of("invalid metric for this sensor type");
+            }
+            if (lower.contains("floating point") || lower.contains("integral type")) {
+                return Optional.of(INVALID_FIELD_VALUE);
+            }
+        }
+        return Optional.empty();
     }
 
     //400 Bad Request - invalid UUID in path variable
@@ -178,7 +190,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException e) {
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
+                BAD_REQUEST,
                 "Invalid UUID string: " + e.getValue()
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);
@@ -199,7 +211,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handlePropertyReferenceException(org.springframework.data.mapping.PropertyReferenceException e) {
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
+                BAD_REQUEST,
                 "Invalid sorting parameter" // Exact message expected by QA
         );
         return new ResponseEntity<>(error, HttpStatus.BAD_REQUEST);

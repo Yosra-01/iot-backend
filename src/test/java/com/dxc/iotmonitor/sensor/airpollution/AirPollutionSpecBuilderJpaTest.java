@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,38 +34,38 @@ class AirPollutionSpecBuilderJpaTest {
     void setUp() {
         row1 = AirPollutionSensorData.builder()
                 .location("CAIRO_NASR_CITY")
-                .pm2_5(120.5f)
+                .pm25(120.5f)
                 .pm10(200.0f)
                 .co(25.0f)
                 .no2(30.0f)
                 .so2(15.0f)
                 .ozone(180.0f)
                 .pollutionLevel(PollutionLevel.UNHEALTHY)
-                .timestamp(LocalDateTime.of(2026, 6, 1, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 1, 10, 0, 0))
                 .build();
 
         row2 = AirPollutionSensorData.builder()
                 .location("CAIRO_MAADI")
-                .pm2_5(50.0f)
+                .pm25(50.0f)
                 .pm10(60.0f)
                 .co(10.0f)
                 .no2(15.0f)
                 .so2(5.0f)
                 .ozone(60.0f)
                 .pollutionLevel(PollutionLevel.GOOD)
-                .timestamp(LocalDateTime.of(2026, 6, 2, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 2, 10, 0, 0))
                 .build();
 
         row3 = AirPollutionSensorData.builder()
                 .location("CAIRO_HELIOPOLIS")
-                .pm2_5(300.0f)
+                .pm25(300.0f)
                 .pm10(400.0f)
                 .co(45.0f)
                 .no2(150.0f)
                 .so2(250.0f)
                 .ozone(250.0f)
                 .pollutionLevel(PollutionLevel.HAZARDOUS)
-                .timestamp(LocalDateTime.of(2026, 6, 3, 10, 0, 0))
+                .timestamp(LocalDateTime.of(2026, Month.JUNE, 3, 10, 0, 0))
                 .build();
 
         repository.saveAll(List.of(row1, row2, row3));
@@ -89,7 +90,7 @@ class AirPollutionSpecBuilderJpaTest {
         var results = repository.findAll(specBuilder.build(params));
 
         assertEquals(1, results.size());
-        assertEquals(120.5f, results.get(0).getPm2_5(), 0.01);
+        assertEquals(120.5f, results.get(0).getPm25(), 0.01);
     }
 
     @Test
@@ -130,8 +131,8 @@ class AirPollutionSpecBuilderJpaTest {
         var params = new AirPollutionFilterParams(
                 null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null,
-                LocalDateTime.of(2026, 6, 2, 0, 0, 0),
-                LocalDateTime.of(2026, 6, 3, 23, 59, 59));
+                LocalDateTime.of(2026, Month.JUNE, 2, 0, 0, 0),
+                LocalDateTime.of(2026, Month.JUNE, 3, 23, 59, 59));
         var results = repository.findAll(specBuilder.build(params));
 
         assertEquals(2, results.size());

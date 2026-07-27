@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,6 +33,7 @@ public class SensorScheduler {
     private static final AtomicInteger trafficRunCount = new AtomicInteger(0);
     private static final AtomicInteger airPollutionRunCount = new AtomicInteger(0);
     private static final AtomicInteger streetLightRunCount = new AtomicInteger(0);
+    private static final ZoneId CAIRO_ZONE = ZoneId.of("Africa/Cairo");
 
     private final RestTemplate restTemplate;
 
@@ -62,16 +64,18 @@ public class SensorScheduler {
             if (response.getStatusCode().is2xxSuccessful()) {
                 TrafficSensorResponse body = response.getBody();
                 if (body != null) {
-                    log.info("\n[SensorScheduler][sendTrafficReading] Run #{}\n" +
-                            "  ┌─────────────────────────────────────────┐\n" +
-                            "  │ id             : {}                     \n" +
-                            "  │ location       : {}                     \n" +
-                            "  │ timestamp      : {}                     \n" +
-                            "  │ trafficDensity : {} vehicles            \n" +
-                            "  │ avgSpeed       : {} km/h                \n" +
-                            "  │ congestion     : {}                     \n" +
-                            "  │ status         : {} ✓                   \n" +
-                            "  └─────────────────────────────────────────┘",
+                    log.info("""
+
+                            [SensorScheduler][sendTrafficReading] Run #{}
+                              ┌─────────────────────────────────────────┐
+                              │ id             : {}                     
+                              │ location       : {}                     
+                              │ timestamp      : {}                     
+                              │ trafficDensity : {} vehicles            
+                              │ avgSpeed       : {} km/h                
+                              │ congestion     : {}                     
+                              │ status         : {} ✓                   
+                              └─────────────────────────────────────────┘""",
                             run,
                             body.getId(), body.getLocation(), body.getTimestamp(),
                             body.getTrafficDensity(), body.getAvgSpeed(),
@@ -99,23 +103,25 @@ public class SensorScheduler {
             if (response.getStatusCode().is2xxSuccessful()) {
                 AirPollutionSensorResponse body = response.getBody();
                 if (body != null) {
-                    log.info("\n[SensorScheduler][sendAirPollutionReading] Run #{}\n" +
-                            "  ┌─────────────────────────────────────────┐\n" +
-                            "  │ id             : {}                     \n" +
-                            "  │ location       : {}                     \n" +
-                            "  │ timestamp      : {}                     \n" +
-                            "  │ pm2_5          : {} µg/m³               \n" +
-                            "  │ pm10           : {} µg/m³               \n" +
-                            "  │ co             : {} mg/m³               \n" +
-                            "  │ no2            : {} µg/m³               \n" +
-                            "  │ so2            : {} µg/m³               \n" +
-                            "  │ ozone          : {} µg/m³               \n" +
-                            "  │ pollutionLevel : {}                     \n" +
-                            "  │ status         : {} ✓                   \n" +
-                            "  └─────────────────────────────────────────┘",
+                    log.info("""
+
+                            [SensorScheduler][sendAirPollutionReading] Run #{}
+                              ┌─────────────────────────────────────────┐
+                              │ id             : {}                     
+                              │ location       : {}                     
+                              │ timestamp      : {}                     
+                              │ pm2_5          : {} µg/m³               
+                              │ pm10           : {} µg/m³               
+                              │ co             : {} mg/m³               
+                              │ no2            : {} µg/m³               
+                              │ so2            : {} µg/m³               
+                              │ ozone          : {} µg/m³               
+                              │ pollutionLevel : {}                     
+                              │ status         : {} ✓                   
+                              └─────────────────────────────────────────┘""",
                             run,
                             body.getId(), body.getLocation(), body.getTimestamp(),
-                            body.getPm2_5(), body.getPm10(), body.getCo(),
+                            body.getPm25(), body.getPm10(), body.getCo(),
                             body.getNo2(), body.getSo2(), body.getOzone(),
                             body.getPollutionLevel(), response.getStatusCode());
                 } else {
@@ -141,16 +147,18 @@ public class SensorScheduler {
             if (response.getStatusCode().is2xxSuccessful()) {
                 StreetLightSensorResponse body = response.getBody();
                 if (body != null) {
-                    log.info("\n[SensorScheduler][sendStreetLightReading] Run #{}\n" +
-                            "  ┌─────────────────────────────────────────┐\n" +
-                            "  │ id               : {}                   \n" +
-                            "  │ location         : {}                   \n" +
-                            "  │ timestamp        : {}                   \n" +
-                            "  │ brightnessLevel  : {}%                  \n" +
-                            "  │ powerConsumption : {} W                 \n" +
-                            "  │ status           : {}                   \n" +
-                            "  │ http             : {} ✓                 \n" +
-                            "  └─────────────────────────────────────────┘",
+                    log.info("""
+
+                            [SensorScheduler][sendStreetLightReading] Run #{}
+                              ┌─────────────────────────────────────────┐
+                              │ id               : {}                   
+                              │ location         : {}                   
+                              │ timestamp        : {}                   
+                              │ brightnessLevel  : {}%                  
+                              │ powerConsumption : {} W                 
+                              │ status           : {}                   
+                              │ http             : {} ✓                 
+                              └─────────────────────────────────────────┘""",
                             run,
                             body.getId(), body.getLocation(), body.getTimestamp(),
                             body.getBrightnessLevel(), body.getPowerConsumption(),
@@ -239,7 +247,7 @@ public class SensorScheduler {
         float[] speedBand = trafficSpeedBand(congestion);
         return TrafficSensorRequest.builder()
                 .location(trafficLocation)
-                .timestamp(LocalDateTime.now().withNano(0))
+                .timestamp(LocalDateTime.now(CAIRO_ZONE).withNano(0))
                 .trafficDensity(randomIntInBand(rnd, TRAFFIC_DENSITY_MAX, densityBand))
                 .avgSpeed(randomMetricInBand(rnd, TRAFFIC_SPEED_MAX, speedBand))
                 .congestionLevel(congestion)
@@ -274,8 +282,8 @@ public class SensorScheduler {
         float[] band = pollutionBandFractions(level);
         return AirPollutionSensorRequest.builder()
                 .location(airLocation)
-                .timestamp(LocalDateTime.now().withNano(0))
-                .pm2_5(randomMetricInBand(rnd, AIR_PM25_MAX, band))
+                .timestamp(LocalDateTime.now(CAIRO_ZONE).withNano(0))
+                .pm25(randomMetricInBand(rnd, AIR_PM25_MAX, band))
                 .pm10(randomMetricInBand(rnd, AIR_PM10_MAX, band))
                 .co(randomMetricInBand(rnd, AIR_CO_MAX, band))
                 .no2(randomMetricInBand(rnd, AIR_NO2_MAX, band))
@@ -293,7 +301,7 @@ public class SensorScheduler {
         float[] powerBand = streetPowerBand(status);
         return StreetLightSensorRequest.builder()
                 .location(lightLocation)
-                .timestamp(LocalDateTime.now().withNano(0))
+                .timestamp(LocalDateTime.now(CAIRO_ZONE).withNano(0))
                 .brightnessLevel(randomIntInBand(rnd, STREET_BRIGHTNESS_MAX, brightnessBand))
                 .powerConsumption(randomMetricInBand(rnd, STREET_POWER_MAX, powerBand))
                 .status(status)

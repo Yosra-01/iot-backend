@@ -1,6 +1,5 @@
 package com.dxc.iotmonitor.alert;
 
-import com.dxc.iotmonitor.alert.AlertData;
 import com.dxc.iotmonitor.alert.repository.AlertRepository;
 import com.dxc.iotmonitor.alert.service.AlertSpecBuilder;
 import com.dxc.iotmonitor.alert.dto.AlertFilterParams;
@@ -17,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.time.LocalDateTime;
+import java.time.Month;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,7 +57,7 @@ class AlertSpecBuilderJpaTest {
                 .location("CAIRO_RING_ROAD")
                 .triggeredValue(480.0f)
                 .thresholdValue(400.0f)
-                .triggeredAt(LocalDateTime.of(2026, 6, 1, 10, 0, 0))
+                .triggeredAt(LocalDateTime.of(2026, Month.JUNE, 1, 10, 0, 0))
                 .readAt(null)
                 .build();
 
@@ -69,8 +69,8 @@ class AlertSpecBuilderJpaTest {
                 .location("CAIRO_OCTOBER_BRIDGE")
                 .triggeredValue(20.0f)
                 .thresholdValue(30.0f)
-                .triggeredAt(LocalDateTime.of(2026, 6, 2, 10, 0, 0))
-                .readAt(LocalDateTime.of(2026, 6, 3, 10, 0, 0))
+                .triggeredAt(LocalDateTime.of(2026, Month.JUNE, 2, 10, 0, 0))
+                .readAt(LocalDateTime.of(2026, Month.JUNE, 3, 10, 0, 0))
                 .build();
 
         otherTypeAlert = AlertData.builder()
@@ -81,7 +81,7 @@ class AlertSpecBuilderJpaTest {
                 .location("CAIRO_NASR_CITY")
                 .triggeredValue(35.0f)
                 .thresholdValue(30.0f)
-                .triggeredAt(LocalDateTime.of(2026, 6, 3, 10, 0, 0))
+                .triggeredAt(LocalDateTime.of(2026, Month.JUNE, 3, 10, 0, 0))
                 .readAt(null)
                 .build();
 
@@ -131,8 +131,8 @@ class AlertSpecBuilderJpaTest {
     void filterByTriggeredAtRange_returnsInWindow() {
         var params = new AlertFilterParams(
                 null, null, null, null,
-                LocalDateTime.of(2026, 6, 1, 0, 0, 0),
-                LocalDateTime.of(2026, 6, 2, 23, 59, 59),
+                LocalDateTime.of(2026, Month.JUNE, 1, 0, 0, 0),
+                LocalDateTime.of(2026, Month.JUNE, 2, 23, 59, 59),
                 null);
         var results = repository.findAll(specBuilder.build(params));
 

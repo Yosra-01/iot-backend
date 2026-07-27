@@ -2,7 +2,6 @@ package com.dxc.iotmonitor.sensor.streetlight.service;
 
 import com.dxc.iotmonitor.enums.LightStatus;
 import com.dxc.iotmonitor.enums.Metric;
-import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.sensor.common.AlertFanOut;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightFilterParams;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorRequest;
@@ -22,7 +21,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -88,7 +87,7 @@ class StreetLightSensorHandlerTest {
                 .id(id)
                 .build();
 
-        Map<Metric, Float> readings = new HashMap<>();
+        Map<Metric, Float> readings = new EnumMap<>(Metric.class);
         readings.put(Metric.BRIGHTNESS_LEVEL, 75.0f);
         readings.put(Metric.POWER_CONSUMPTION, 1200.0f);
 

@@ -32,6 +32,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AlertController {
 
+    private static final String MESSAGE_KEY = "message";
+    private static final String USER_NOT_FOUND = "User not found.";
+
     private final AlertService alertService;
     private final AuthenticatedUserResolver authenticatedUserResolver;
 
@@ -50,7 +53,7 @@ public class AlertController {
             @RequestParam(defaultValue = "desc") String sortDir) {
 
         User user = authenticatedUserResolver.current()
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         AlertFilterParams filters = new AlertFilterParams(
                 sensorType, metric, alertType, location, triggeredStart, triggeredEnd, read);
         Pageable pageable = PageRequestBuilder.from(page, size, sortBy, sortDir);
@@ -68,7 +71,7 @@ public class AlertController {
             @RequestParam(required = false) Boolean read) {
 
         User user = authenticatedUserResolver.current()
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         AlertFilterParams filters = new AlertFilterParams(
                 sensorType, metric, alertType, location, triggeredStart, triggeredEnd, read);
         return ResponseEntity.ok(Map.of("count", alertService.count(filters, user)));
@@ -77,29 +80,29 @@ public class AlertController {
     @GetMapping("/{id}")
     public ResponseEntity<AlertResponse> findById(@PathVariable UUID id) {
         User user = authenticatedUserResolver.current()
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         return ResponseEntity.ok(alertService.findById(id, user));
     }
 
     @PatchMapping("/{id}/read")
     public ResponseEntity<Map<String, String>> markAsRead(@PathVariable UUID id) {
         User user = authenticatedUserResolver.current()
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         alertService.markAsRead(id, user);
-        return ResponseEntity.ok(Map.of("message", "Alert marked as read."));
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Alert marked as read."));
     }
 
     @DeleteMapping("/flush")
     public ResponseEntity<Map<String, String>> flush() {
         alertService.flush();
-        return ResponseEntity.ok(Map.of("message", "Alerts flushed successfully."));
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Alerts flushed successfully."));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Map<String, String>> deleteById(@PathVariable UUID id) {
         User user = authenticatedUserResolver.current()
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         alertService.deleteById(id, user);
-        return ResponseEntity.ok(Map.of("message", "Alert dismissed successfully."));
+        return ResponseEntity.ok(Map.of(MESSAGE_KEY, "Alert dismissed successfully."));
     }
 }

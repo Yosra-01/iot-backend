@@ -23,8 +23,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class StreetLightSensorHandler implements SensorHandler<StreetLightSensorData, StreetLightSensorRequest, StreetLightSensorResponse, StreetLightFilterParams> {
+public class StreetLightSensorHandler implements SensorHandler<StreetLightSensorRequest, StreetLightSensorResponse, StreetLightFilterParams> {
 
     private final StreetLightSensorRepository streetLightSensorRepository;
     private final StreetLightSensorMapper streetLightSensorMapper;
@@ -105,11 +106,13 @@ public class StreetLightSensorHandler implements SensorHandler<StreetLightSensor
             throw new IllegalArgumentException("location must not exceed 100 characters");
         }
         if (from != null) {
-            LocalDateTime effectiveTo = (to != null) ? to : LocalDateTime.now();
+            ZoneId zone = ZoneId.of("Africa/Cairo");
+            LocalDateTime effectiveTo = (to != null) ? to : LocalDateTime.now(zone);
             if (from.isAfter(effectiveTo)) {
                 throw new IllegalArgumentException("invalid date range: 'from' must be before 'to'");
             }
-            if (Duration.between(from, effectiveTo).toDays() > 90) {
+            // Convert to ZonedDateTime so duration is computed on zone-aware instants (java:S8700).
+            if (ChronoUnit.DAYS.between(from.atZone(zone), effectiveTo.atZone(zone)) > 90) {
                 throw new IllegalArgumentException("range too wide for daily breakdown");
             }
         }
