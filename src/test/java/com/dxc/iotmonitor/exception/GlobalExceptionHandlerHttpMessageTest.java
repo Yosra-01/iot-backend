@@ -1,5 +1,7 @@
 package com.dxc.iotmonitor.exception;
 
+import com.dxc.iotmonitor.enums.SensorType;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,28 @@ class GlobalExceptionHandlerHttpMessageTest {
                 null,
                 Integer.class,
                 "Cannot deserialize value of type `java.lang.Integer` from floating point number (5.5)");
+        HttpMessageNotReadableException ex = new HttpMessageNotReadableException("JSON parse error", cause);
+
+        ResponseEntity<ErrorResponse> response = handler.handleHttpMessageNotReadable(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Invalid value for field.", response.getBody().getMessage());
+    }
+
+    @Test
+    void handleHttpMessageNotReadable_invalidEnum_returnsInvalidMetricMessage() {
+        InvalidFormatException cause = InvalidFormatException.from(null, "BANANA", null, SensorType.class);
+        HttpMessageNotReadableException ex = new HttpMessageNotReadableException("JSON parse error", cause);
+
+        ResponseEntity<ErrorResponse> response = handler.handleHttpMessageNotReadable(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("invalid metric for this sensor type", response.getBody().getMessage());
+    }
+
+    @Test
+    void handleHttpMessageNotReadable_invalidFormat_returnsInvalidValueForField() {
+        InvalidFormatException cause = InvalidFormatException.from(null, "notANumber", null, String.class);
         HttpMessageNotReadableException ex = new HttpMessageNotReadableException("JSON parse error", cause);
 
         ResponseEntity<ErrorResponse> response = handler.handleHttpMessageNotReadable(ex);

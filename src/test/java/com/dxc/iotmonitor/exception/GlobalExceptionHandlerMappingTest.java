@@ -1,14 +1,24 @@
 package com.dxc.iotmonitor.exception;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class GlobalExceptionHandlerMappingTest {
 
@@ -98,6 +108,19 @@ class GlobalExceptionHandlerMappingTest {
     }
 
     @Test
+    void handleMethodArgumentTypeMismatch_returns400WithInvalidUuidMessage() {
+        var ex = mock(MethodArgumentTypeMismatchException.class);
+        when(ex.getValue()).thenReturn("abc-123");
+
+        ResponseEntity<ErrorResponse> response = handler.handleMethodArgumentTypeMismatch(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(400, response.getBody().getStatus());
+        assertEquals("Bad Request", response.getBody().getError());
+        assertEquals("Invalid UUID string: abc-123", response.getBody().getMessage());
+    }
+
+    @Test
     void handleMaxUploadSize_returns413() {
         var ex = new MaxUploadSizeExceededException(1024);
 
@@ -107,5 +130,52 @@ class GlobalExceptionHandlerMappingTest {
         assertEquals(413, response.getBody().getStatus());
         assertEquals("Payload Too Large", response.getBody().getError());
         assertEquals("File too large", response.getBody().getMessage());
+    }
+
+    @Test
+    void handleGenericException_returns500WithHardcodedMessage() {
+        var ex = new RuntimeException("something internal broke");
+
+        ResponseEntity<ErrorResponse> response = handler.handleGenericException(ex);
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+        assertEquals(500, response.getBody().getStatus());
+        assertEquals("Internal Server Error", response.getBody().getError());
+        assertEquals("Internal error occurred.", response.getBody().getMessage());
+    }
+
+    @Test
+    void handleValidationErrors_returns400WithMessageList() {
+        var fieldError = mock(FieldError.class);
+        when(fieldError.getDefaultMessage()).thenReturn("must not be blank");
+
+        var bindingResult = mock(BindingResult.class);
+        when(bindingResult.getFieldErrors()).thenReturn(List.of(fieldError));
+
+        var ex = mock(MethodArgumentNotValidException.class);
+        when(ex.getBindingResult()).thenReturn(bindingResult);
+
+        ResponseEntity<ErrorResponse> response = handler.handleValidationErrors(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(400, response.getBody().getStatus());
+        assertEquals("Bad Request", response.getBody().getError());
+        assertEquals(List.of("must not be blank"), response.getBody().getMessage());
+    }
+
+    @Test
+    void handleHandlerMethodValidation_returns400WithMessageList() {
+        var resolvable = mock(MessageSourceResolvable.class);
+        when(resolvable.getDefaultMessage()).thenReturn("must not be blank");
+
+        var ex = mock(HandlerMethodValidationException.class);
+        doReturn(List.of(resolvable)).when(ex).getAllErrors();
+
+        ResponseEntity<ErrorResponse> response = handler.handleHandlerMethodValidation(ex);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(400, response.getBody().getStatus());
+        assertEquals("Bad Request", response.getBody().getError());
+        assertEquals(List.of("must not be blank"), response.getBody().getMessage());
     }
 }
