@@ -1,20 +1,17 @@
 package com.dxc.iotmonitor.user.service;
 
+import com.dxc.iotmonitor.alert.repository.AlertRepository;
 import com.dxc.iotmonitor.exception.InvalidCredentialsException;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
-import com.dxc.iotmonitor.alert.repository.AlertRepository;
 import com.dxc.iotmonitor.polling.PollingIntervalRepository;
 import com.dxc.iotmonitor.settings.repository.SettingsRepository;
-import com.dxc.iotmonitor.user.config.ProfilePictureProperties;
 import com.dxc.iotmonitor.user.dto.ProfileResponse;
 import com.dxc.iotmonitor.user.dto.UpdatePasswordRequest;
 import com.dxc.iotmonitor.user.mapper.UserMapper;
 import com.dxc.iotmonitor.user.model.User;
 import com.dxc.iotmonitor.user.repository.UserRepository;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,14 +19,20 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.URI;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
 
@@ -43,7 +46,7 @@ class UserServiceTest {
     private UserMapper userMapper;
 
     @Mock
-    private ProfilePictureProperties profilePictureProperties;
+    private ProfilePictureStorageService profilePictureStorageService;
 
     @Mock
     private AlertRepository alertRepository;
@@ -57,22 +60,9 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
-    @TempDir
-    Path tempProfilePicturesRoot;
-
-    @BeforeEach
-    void bindProfilePictureRoot() {
-        lenient().when(profilePictureProperties.resolvedRoot()).thenReturn(tempProfilePicturesRoot);
-    }
-
-    // ================================================================
-    // getProfile tests
-    // ================================================================
-
     @Test
-    void getProfile_NoPictureOnDisk_ReturnsNullProfilePicture() {
+    void getProfile_noPicture_returnsNullProfilePicture() {
         String email = "john.doe@example.com";
-
         User user = new User();
         user.setEmail(email);
         user.setUserId(UUID.randomUUID());
@@ -93,166 +83,165 @@ class UserServiceTest {
     }
 
     @Test
-    void getProfile_PictureOnDisk_ReturnsStoredPath() {
+    void getProfile_withCdnUrl_returnsStoredProfilePicture() {
         String email = "john.doe@example.com";
-        String storedPath = "uploads/profile-pictures/550e8400-e29b-41d4-a716-446655440000.jpeg";
-
+        String storedUrl = "https://cdn.example.com/profile-pictures/user/pic.jpeg";
         User user = new User();
         user.setEmail(email);
-        user.setProfilePicture(storedPath);
+        user.setProfilePicture(storedUrl);
 
         ProfileResponse expectedResponse = new ProfileResponse();
         expectedResponse.setEmail(email);
+        expectedResponse.setProfilePicture(storedUrl);
 
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
         when(userMapper.toResponse(user)).thenReturn(expectedResponse);
 
         ProfileResponse result = userService.getProfile(email);
 
-        assertNotNull(result);
-        assertEquals(storedPath, result.getProfilePicture());
+        assertEquals(storedUrl, result.getProfilePicture());
     }
 
-    // ================================================================
-    // updateProfilePicture tests
-    // ================================================================
-
     @Test
-    void updateProfilePicture_Success() throws IOException {
-        // Arrange
+    void updateProfilePicture_success_uploadsAndStoresCdnUrl() throws IOException {
         String email = "john.doe@example.com";
-        Path uploadsRoot = Paths.get("uploads", "profile-pictures").toAbsolutePath();
-        Files.createDirectories(uploadsRoot);
-        when(profilePictureProperties.resolvedRoot()).thenReturn(uploadsRoot);
-
+        String cdnUrl = "https://cdn.example.com/profile-pictures/user/new.jpeg";
         User user = new User();
         user.setEmail(email);
         user.setUserId(UUID.randomUUID());
-
-        // MockMultipartFile simulates a real uploaded file without touching the real filesystem
-        MockMultipartFile file = new MockMultipartFile(
-                "file",                      // form field name
-                "profile.jpg",               // original filename
-                "image/jpeg",                // content type — must start with "image/"
-                "fake-image-bytes".getBytes() // fake content — we just need bytes, not a real image
-        );
+        MockMultipartFile file = imageFile();
 
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
+        when(profilePictureStorageService.upload(user.getUserId(), file)).thenReturn(cdnUrl);
 
-        // Act
+        String result = userService.updateProfilePicture(email, file);
+
+        assertEquals(cdnUrl, result);
+        assertEquals(cdnUrl, user.getProfilePicture());
+        verify(userRepository, times(1)).save(user);
+        verify(profilePictureStorageService, never()).deleteByPublicUrl(any());
+    }
+
+    @Test
+    void updateProfilePicture_replacement_deletesOldObject() throws IOException {
+        String email = "john.doe@example.com";
+        String oldUrl = "https://cdn.example.com/profile-pictures/user/old.jpeg";
+        String newUrl = "https://cdn.example.com/profile-pictures/user/new.jpeg";
+        User user = new User();
+        user.setEmail(email);
+        user.setUserId(UUID.randomUUID());
+        user.setProfilePicture(oldUrl);
+        MockMultipartFile file = imageFile();
+
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
+        when(profilePictureStorageService.upload(user.getUserId(), file)).thenReturn(newUrl);
+
         userService.updateProfilePicture(email, file);
 
-        // Assert — file on disk and path persisted on User
-        Path expectedFile = uploadsRoot.resolve(user.getUserId() + ".jpeg");
-        assertTrue(Files.isRegularFile(expectedFile));
-        verify(userRepository, times(1)).save(user);
-        assertNotNull(user.getProfilePicture());
-        assertTrue(user.getProfilePicture().contains("uploads"));
+        verify(profilePictureStorageService).deleteByPublicUrl(oldUrl);
+        assertEquals(newUrl, user.getProfilePicture());
+        verify(userRepository).save(user);
     }
 
     @Test
-    void updateProfilePicture_UserNotFound_ThrowsResourceNotFoundException() {
-        // Arrange
+    void updateProfilePicture_userNotFound_throwsResourceNotFoundException() throws IOException {
         String email = "unknown@example.com";
-
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "profile.jpg",
-                "image/jpeg",
-                "fake-image-bytes".getBytes()
-        );
+        MockMultipartFile file = imageFile();
 
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
 
-        // Act & Assert
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
-                () -> userService.updateProfilePicture(email, file)
-        );
+                () -> userService.updateProfilePicture(email, file));
 
         assertEquals("User not found", exception.getMessage());
+        verify(profilePictureStorageService, never()).upload(any(), any());
         verify(userRepository, never()).save(any());
     }
 
     @Test
-    void updateProfilePicture_InvalidFileType_ThrowsIllegalArgumentException() {
-        // Arrange
-        String email = "john.doe@example.com";
+void updateProfilePictureStorageValidationFailureDoesNotSave() throws IOException {
+    String email = "john.doe@example.com";
+    User user = new User();
+    user.setEmail(email);
+    user.setUserId(UUID.randomUUID());
+    MockMultipartFile file = imageFile();
 
-        User user = new User();
-        user.setEmail(email);
-        user.setUserId(UUID.randomUUID());
+    when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
+    when(profilePictureStorageService.upload(user.getUserId(), file))
+            .thenThrow(new IllegalArgumentException("Only image files are allowed."));
 
-        // This file has a PDF content type — should be rejected
-        MockMultipartFile file = new MockMultipartFile(
-                "file",
-                "document.pdf",
-                "application/pdf",
-                "fake-pdf-bytes".getBytes()
-        );
+    IllegalArgumentException exception = assertThrows(
+            IllegalArgumentException.class,
+            () -> userService.updateProfilePicture(email, file));
 
-        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
-
-        // Act & Assert
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> userService.updateProfilePicture(email, file)
-        );
-
-        assertEquals("Only image files are allowed.", exception.getMessage());
-        verify(userRepository, never()).save(any());
-    }
-
-    // ================================================================
-    // getProfilePicture tests
-    // ================================================================
+    assertEquals("Only image files are allowed.", exception.getMessage());
+    verify(userRepository, never()).save(any());
+}
 
     @Test
-    void getProfilePicture_UserNotFound_ThrowsResourceNotFoundException() {
-        // Arrange
+    void getProfilePictureUri_userNotFound_throwsResourceNotFoundException() {
         String email = "unknown@example.com";
-
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThrows(
                 ResourceNotFoundException.class,
-                () -> userService.getProfilePicture(email)
-        );
+                () -> userService.getProfilePictureUri(email));
     }
 
     @Test
-    void getProfilePicture_NoPictureSet_ThrowsResourceNotFoundException() {
-        // Arrange
+    void getProfilePictureUri_noPictureSet_throwsResourceNotFoundException() {
         String email = "john.doe@example.com";
-
         User user = new User();
         user.setEmail(email);
         user.setUserId(UUID.randomUUID());
 
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
 
-        // Act & Assert — no matching file on disk
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
-                () -> userService.getProfilePicture(email)
-        );
+                () -> userService.getProfilePictureUri(email));
 
         assertEquals("No profile picture found", exception.getMessage());
     }
 
-    // ================================================================
-    // updatePassword tests
-    // ================================================================
+    @Test
+    void getProfilePictureUri_legacyLocalPath_throwsResourceNotFoundException() {
+        String email = "john.doe@example.com";
+        User user = new User();
+        user.setEmail(email);
+        user.setProfilePicture("uploads/profile-pictures/user.jpeg");
+
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> userService.getProfilePictureUri(email));
+
+        assertEquals("No profile picture found", exception.getMessage());
+    }
 
     @Test
-    void updatePassword_Success() {
+    void getProfilePictureUri_withPicture_returnsStoredUri() {
         String email = "john.doe@example.com";
+        String cdnUrl = "https://cdn.example.com/profile-pictures/user/pic.jpeg";
+        User user = new User();
+        user.setEmail(email);
+        user.setProfilePicture(cdnUrl);
 
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
+
+        URI result = userService.getProfilePictureUri(email);
+
+        assertEquals(URI.create(cdnUrl), result);
+    }
+
+    @Test
+    void updatePassword_success() {
+        String email = "john.doe@example.com";
         User user = new User();
         user.setEmail(email);
         user.setPassword("hashedOldPassword");
-
         UpdatePasswordRequest request = new UpdatePasswordRequest();
         request.setCurrentPassword("oldPassword");
         request.setNewPassword("newPassword123!");
@@ -268,13 +257,11 @@ class UserServiceTest {
     }
 
     @Test
-    void updatePassword_WrongCurrentPassword_ThrowsInvalidCredentialsException() {
+    void updatePassword_wrongCurrentPassword_throwsInvalidCredentialsException() {
         String email = "john.doe@example.com";
-
         User user = new User();
         user.setEmail(email);
         user.setPassword("hashedOldPassword");
-
         UpdatePasswordRequest request = new UpdatePasswordRequest();
         request.setCurrentPassword("wrongPassword");
         request.setNewPassword("newPassword123!");
@@ -284,51 +271,71 @@ class UserServiceTest {
 
         InvalidCredentialsException exception = assertThrows(
                 InvalidCredentialsException.class,
-                () -> userService.updatePassword(email, request)
-        );
+                () -> userService.updatePassword(email, request));
 
         assertEquals("Current password is incorrect.", exception.getMessage());
         verify(userRepository, never()).save(any());
     }
 
-    // ================================================================
-    // deleteUserByEmail tests
-    // ================================================================
-
     @Test
-    void deleteUserByEmail_Success() throws IOException {
+    void deleteUserByEmail_success_deletesProfilePictureObjectAndUserData() {
         String email = "john.doe@example.com";
-
+        String cdnUrl = "https://cdn.example.com/profile-pictures/user/pic.jpeg";
         User user = new User();
         user.setEmail(email);
-        UUID userId = UUID.randomUUID();
-        user.setUserId(userId);
-
-        Path picture = tempProfilePicturesRoot.resolve(userId + ".jpeg");
-        Files.createDirectories(tempProfilePicturesRoot);
-        Files.writeString(picture, "x");
-        user.setProfilePicture(picture.toString());
+        user.setUserId(UUID.randomUUID());
+        user.setProfilePicture(cdnUrl);
 
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
 
         userService.deleteUserByEmail(email);
 
-        assertFalse(Files.exists(picture));
-        verify(userRepository, times(1)).delete(user);
+        verify(profilePictureStorageService).deleteByPublicUrl(cdnUrl);
+        verify(pollingIntervalRepository).deleteByUser(user);
+        verify(settingsRepository).deleteByUser(user);
+        verify(alertRepository).deleteByUser(user);
+        verify(userRepository).delete(user);
     }
 
     @Test
-    void deleteUserByEmail_UserNotFound_ThrowsResourceNotFoundException() {
-        String email = "unknown@example.com";
+    void deleteUserByEmail_pictureDeleteFails_doesNotDeleteUser() {
+        String email = "john.doe@example.com";
+        String cdnUrl = "https://cdn.example.com/profile-pictures/user/pic.jpeg";
+        User user = new User();
+        user.setEmail(email);
+        user.setProfilePicture(cdnUrl);
 
+        when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
+        org.mockito.Mockito.doThrow(new IllegalStateException("Failed to delete profile picture from R2"))
+                .when(profilePictureStorageService)
+                .deleteByPublicUrl(cdnUrl);
+
+        assertThrows(IllegalStateException.class, () -> userService.deleteUserByEmail(email));
+
+        verify(userRepository, never()).delete(any());
+        verify(alertRepository, never()).deleteByUser(any());
+        verify(settingsRepository, never()).deleteByUser(any());
+        verify(pollingIntervalRepository, never()).deleteByUser(any());
+    }
+
+    @Test
+    void deleteUserByEmail_userNotFound_throwsResourceNotFoundException() {
+        String email = "unknown@example.com";
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
 
         ResourceNotFoundException exception = assertThrows(
                 ResourceNotFoundException.class,
-                () -> userService.deleteUserByEmail(email)
-        );
+                () -> userService.deleteUserByEmail(email));
 
         assertEquals("User not found", exception.getMessage());
         verify(userRepository, never()).delete(any());
+    }
+
+    private MockMultipartFile imageFile() {
+        return new MockMultipartFile(
+                "file",
+                "profile.jpg",
+                "image/jpeg",
+                "fake-image-bytes".getBytes());
     }
 }
