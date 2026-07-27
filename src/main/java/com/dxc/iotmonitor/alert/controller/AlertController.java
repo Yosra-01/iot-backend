@@ -4,7 +4,10 @@ import com.dxc.iotmonitor.alert.dto.AlertFilterParams;
 import com.dxc.iotmonitor.alert.dto.response.AlertResponse;
 import com.dxc.iotmonitor.alert.service.AlertService;
 import com.dxc.iotmonitor.enums.AlertType;
+import com.dxc.iotmonitor.enums.CongestionLevel;
+import com.dxc.iotmonitor.enums.LightStatus;
 import com.dxc.iotmonitor.enums.Metric;
+import com.dxc.iotmonitor.enums.PollutionLevel;
 import com.dxc.iotmonitor.enums.SensorType;
 import com.dxc.iotmonitor.exception.ResourceNotFoundException;
 import com.dxc.iotmonitor.sensor.common.AuthenticatedUserResolver;
@@ -47,6 +50,9 @@ public class AlertController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime triggeredStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime triggeredEnd,
             @RequestParam(required = false) Boolean read,
+            @RequestParam(required = false) PollutionLevel pollutionLevel,
+            @RequestParam(required = false) CongestionLevel congestionLevel,
+            @RequestParam(required = false) LightStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "triggeredAt") String sortBy,
@@ -55,7 +61,8 @@ public class AlertController {
         User user = authenticatedUserResolver.current()
                 .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         AlertFilterParams filters = new AlertFilterParams(
-                sensorType, metric, alertType, location, triggeredStart, triggeredEnd, read);
+                sensorType, metric, alertType, location, triggeredStart, triggeredEnd, read,
+                pollutionLevel, congestionLevel, status);
         Pageable pageable = PageRequestBuilder.from(page, size, sortBy, sortDir);
         return ResponseEntity.ok(alertService.findFiltered(filters, pageable, user));
     }
@@ -68,12 +75,16 @@ public class AlertController {
             @RequestParam(required = false) String location,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime triggeredStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime triggeredEnd,
-            @RequestParam(required = false) Boolean read) {
+            @RequestParam(required = false) Boolean read,
+            @RequestParam(required = false) PollutionLevel pollutionLevel,
+            @RequestParam(required = false) CongestionLevel congestionLevel,
+            @RequestParam(required = false) LightStatus status) {
 
         User user = authenticatedUserResolver.current()
                 .orElseThrow(() -> new ResourceNotFoundException(USER_NOT_FOUND));
         AlertFilterParams filters = new AlertFilterParams(
-                sensorType, metric, alertType, location, triggeredStart, triggeredEnd, read);
+                sensorType, metric, alertType, location, triggeredStart, triggeredEnd, read,
+                pollutionLevel, congestionLevel, status);
         return ResponseEntity.ok(Map.of("count", alertService.count(filters, user)));
     }
 
