@@ -4,9 +4,13 @@ import com.dxc.iotmonitor.enums.PollutionLevel;
 import com.dxc.iotmonitor.sensor.SensorLocations;
 import com.dxc.iotmonitor.sensor.airpollution.dto.AirPollutionSensorRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,10 +24,11 @@ class AirPollutionValidatorTest {
     private static final LocalDateTime PAST_TIMESTAMP =
             LocalDateTime.now(ZoneId.of("Africa/Cairo")).minusHours(1);
 
-    @Test
-    void validate_nullLocation_throwsIllegalArgument() {
+    @ParameterizedTest
+    @MethodSource("invalidLocationCases")
+    void validate_invalidLocation_throwsIllegalArgument(String location, String expectedMessage) {
         AirPollutionSensorRequest request = AirPollutionSensorRequest.builder()
-                .location(null)
+                .location(location)
                 .timestamp(PAST_TIMESTAMP)
                 .pm25(10.0f)
                 .pm10(20.0f)
@@ -38,49 +43,15 @@ class AirPollutionValidatorTest {
                 IllegalArgumentException.class,
                 () -> validator.validate(request));
 
-        assertEquals("location is required", ex.getMessage());
+        assertEquals(expectedMessage, ex.getMessage());
     }
 
-    @Test
-    void validate_blankLocation_throwsIllegalArgument() {
-        AirPollutionSensorRequest request = AirPollutionSensorRequest.builder()
-                .location("   ")
-                .timestamp(PAST_TIMESTAMP)
-                .pm25(10.0f)
-                .pm10(20.0f)
-                .co(1.0f)
-                .no2(5.0f)
-                .so2(5.0f)
-                .ozone(10.0f)
-                .pollutionLevel(PollutionLevel.GOOD)
-                .build();
-
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> validator.validate(request));
-
-        assertEquals("location is required", ex.getMessage());
-    }
-
-    @Test
-    void validate_invalidLocation_throwsIllegalArgument() {
-        AirPollutionSensorRequest request = AirPollutionSensorRequest.builder()
-                .location("MARS")
-                .timestamp(PAST_TIMESTAMP)
-                .pm25(10.0f)
-                .pm10(20.0f)
-                .co(1.0f)
-                .no2(5.0f)
-                .so2(5.0f)
-                .ozone(10.0f)
-                .pollutionLevel(PollutionLevel.GOOD)
-                .build();
-
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> validator.validate(request));
-
-        assertEquals("invalid location for this sensor type", ex.getMessage());
+    private static Stream<Arguments> invalidLocationCases() {
+        return Stream.of(
+                Arguments.of(null, "location is required"),
+                Arguments.of("   ", "location is required"),
+                Arguments.of("MARS", "invalid location for this sensor type")
+        );
     }
 
     @Test

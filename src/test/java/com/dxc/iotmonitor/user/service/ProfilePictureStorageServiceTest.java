@@ -69,9 +69,10 @@ class ProfilePictureStorageServiceTest {
                 "application/pdf",
                 "fake-pdf".getBytes());
 
+        UUID userId = UUID.randomUUID();
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.upload(UUID.randomUUID(), file));
+                () -> service.upload(userId, file));
 
         assertEquals("Only image files are allowed.", exception.getMessage());
         verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));
@@ -85,9 +86,10 @@ class ProfilePictureStorageServiceTest {
                 "image/bmp",
                 "fake-image".getBytes());
 
+        UUID userId = UUID.randomUUID();
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.upload(UUID.randomUUID(), file));
+                () -> service.upload(userId, file));
 
         assertEquals("Unsupported image type.", exception.getMessage());
         verify(s3Client, never()).putObject(any(PutObjectRequest.class), any(RequestBody.class));

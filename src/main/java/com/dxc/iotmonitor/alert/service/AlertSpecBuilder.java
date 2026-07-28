@@ -21,6 +21,9 @@ import java.util.List;
 @Component
 public class AlertSpecBuilder implements SpecBuilder<AlertData, AlertFilterParams> {
 
+    private static final String FIELD_SENSOR_TYPE = "sensorType";
+    private static final String FIELD_READING_ID = "readingId";
+
     @Override
     public Specification<AlertData> build(AlertFilterParams filters) {
         return (root, query, cb) -> {
@@ -46,7 +49,7 @@ public class AlertSpecBuilder implements SpecBuilder<AlertData, AlertFilterParam
     private void addEqualsPredicates(List<Predicate> predicates, Root<AlertData> root,
                                      CriteriaBuilder cb, AlertFilterParams filters) {
         if (filters.sensorType() != null) {
-            predicates.add(cb.equal(root.get("sensorType"), filters.sensorType()));
+            predicates.add(cb.equal(root.get(FIELD_SENSOR_TYPE), filters.sensorType()));
         }
         if (filters.metric() != null) {
             predicates.add(cb.equal(root.get("metric"), filters.metric()));
@@ -78,15 +81,15 @@ public class AlertSpecBuilder implements SpecBuilder<AlertData, AlertFilterParam
     private void addReadingLevelPredicates(List<Predicate> predicates, Root<AlertData> root,
                                            CriteriaQuery<?> query, CriteriaBuilder cb, AlertFilterParams filters) {
         if (filters.pollutionLevel() != null) {
-            predicates.add(cb.equal(root.get("sensorType"), SensorType.AIR_POLLUTION));
+            predicates.add(cb.equal(root.get(FIELD_SENSOR_TYPE), SensorType.AIR_POLLUTION));
             predicates.add(existsAirPollutionReading(root, query, cb, filters));
         }
         if (filters.congestionLevel() != null) {
-            predicates.add(cb.equal(root.get("sensorType"), SensorType.TRAFFIC));
+            predicates.add(cb.equal(root.get(FIELD_SENSOR_TYPE), SensorType.TRAFFIC));
             predicates.add(existsTrafficReading(root, query, cb, filters));
         }
         if (filters.status() != null) {
-            predicates.add(cb.equal(root.get("sensorType"), SensorType.STREET_LIGHT));
+            predicates.add(cb.equal(root.get(FIELD_SENSOR_TYPE), SensorType.STREET_LIGHT));
             predicates.add(existsStreetLightReading(root, query, cb, filters));
         }
     }
@@ -96,7 +99,7 @@ public class AlertSpecBuilder implements SpecBuilder<AlertData, AlertFilterParam
         Subquery<Integer> subquery = query.subquery(Integer.class);
         Root<AirPollutionSensorData> reading = subquery.from(AirPollutionSensorData.class);
         subquery.select(cb.literal(1)).where(
-                cb.equal(reading.get("id"), root.get("readingId")),
+                cb.equal(reading.get("id"), root.get(FIELD_READING_ID)),
                 cb.equal(reading.get("pollutionLevel"), filters.pollutionLevel()));
         return cb.exists(subquery);
     }
@@ -106,7 +109,7 @@ public class AlertSpecBuilder implements SpecBuilder<AlertData, AlertFilterParam
         Subquery<Integer> subquery = query.subquery(Integer.class);
         Root<TrafficSensorData> reading = subquery.from(TrafficSensorData.class);
         subquery.select(cb.literal(1)).where(
-                cb.equal(reading.get("id"), root.get("readingId")),
+                cb.equal(reading.get("id"), root.get(FIELD_READING_ID)),
                 cb.equal(reading.get("congestionLevel"), filters.congestionLevel()));
         return cb.exists(subquery);
     }
@@ -116,7 +119,7 @@ public class AlertSpecBuilder implements SpecBuilder<AlertData, AlertFilterParam
         Subquery<Integer> subquery = query.subquery(Integer.class);
         Root<StreetLightSensorData> reading = subquery.from(StreetLightSensorData.class);
         subquery.select(cb.literal(1)).where(
-                cb.equal(reading.get("id"), root.get("readingId")),
+                cb.equal(reading.get("id"), root.get(FIELD_READING_ID)),
                 cb.equal(reading.get("status"), filters.status()));
         return cb.exists(subquery);
     }

@@ -46,7 +46,7 @@ public class ProfilePictureStorageService {
     }
 
     public void deleteByPublicUrl(String publicUrl) {
-        objectKeyFromPublicUrl(publicUrl).ifPresent((key) -> {
+        objectKeyFromPublicUrl(publicUrl).ifPresent(key -> {
             DeleteObjectRequest request = DeleteObjectRequest.builder()
                     .bucket(properties.getBucket())
                     .key(key)
@@ -124,10 +124,22 @@ public class ProfilePictureStorageService {
         if (value == null || value.isBlank()) {
             return "";
         }
-        return value.replaceAll("/+$", "");
+        int end = value.length();
+        while (end > 0 && value.charAt(end - 1) == '/') {
+            end--;
+        }
+        return value.substring(0, end);
     }
 
     private String stripSlashes(String value) {
-        return value.replaceAll("^/+", "").replaceAll("/+$", "");
+        int start = 0;
+        int end = value.length();
+        while (start < end && value.charAt(start) == '/') {
+            start++;
+        }
+        while (end > start && value.charAt(end - 1) == '/') {
+            end--;
+        }
+        return value.substring(start, end);
     }
 }

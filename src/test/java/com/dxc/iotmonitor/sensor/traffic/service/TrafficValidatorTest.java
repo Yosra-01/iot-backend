@@ -4,9 +4,13 @@ import com.dxc.iotmonitor.enums.CongestionLevel;
 import com.dxc.iotmonitor.sensor.SensorLocations;
 import com.dxc.iotmonitor.sensor.traffic.dto.TrafficSensorRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,10 +24,11 @@ class TrafficValidatorTest {
     private static final LocalDateTime PAST_TIMESTAMP =
             LocalDateTime.now(ZoneId.of("Africa/Cairo")).minusHours(1);
 
-    @Test
-    void validate_nullLocation_throwsIllegalArgument() {
+    @ParameterizedTest
+    @MethodSource("invalidLocationCases")
+    void validate_invalidLocation_throwsIllegalArgument(String location, String expectedMessage) {
         TrafficSensorRequest request = TrafficSensorRequest.builder()
-                .location(null)
+                .location(location)
                 .timestamp(PAST_TIMESTAMP)
                 .trafficDensity(100)
                 .avgSpeed(50.0f)
@@ -34,41 +39,15 @@ class TrafficValidatorTest {
                 IllegalArgumentException.class,
                 () -> validator.validate(request));
 
-        assertEquals("location is required", ex.getMessage());
+        assertEquals(expectedMessage, ex.getMessage());
     }
 
-    @Test
-    void validate_blankLocation_throwsIllegalArgument() {
-        TrafficSensorRequest request = TrafficSensorRequest.builder()
-                .location("   ")
-                .timestamp(PAST_TIMESTAMP)
-                .trafficDensity(100)
-                .avgSpeed(50.0f)
-                .congestionLevel(CongestionLevel.LOW)
-                .build();
-
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> validator.validate(request));
-
-        assertEquals("location is required", ex.getMessage());
-    }
-
-    @Test
-    void validate_invalidLocation_throwsIllegalArgument() {
-        TrafficSensorRequest request = TrafficSensorRequest.builder()
-                .location("MARS")
-                .timestamp(PAST_TIMESTAMP)
-                .trafficDensity(100)
-                .avgSpeed(50.0f)
-                .congestionLevel(CongestionLevel.LOW)
-                .build();
-
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> validator.validate(request));
-
-        assertEquals("invalid location for this sensor type", ex.getMessage());
+    private static Stream<Arguments> invalidLocationCases() {
+        return Stream.of(
+                Arguments.of(null, "location is required"),
+                Arguments.of("   ", "location is required"),
+                Arguments.of("MARS", "invalid location for this sensor type")
+        );
     }
 
     @Test

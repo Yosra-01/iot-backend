@@ -4,9 +4,13 @@ import com.dxc.iotmonitor.enums.LightStatus;
 import com.dxc.iotmonitor.sensor.SensorLocations;
 import com.dxc.iotmonitor.sensor.streetlight.dto.StreetLightSensorRequest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,10 +24,11 @@ class StreetLightValidatorTest {
     private static final LocalDateTime PAST_TIMESTAMP =
             LocalDateTime.now(ZoneId.of("Africa/Cairo")).minusHours(1);
 
-    @Test
-    void validate_nullLocation_throwsIllegalArgument() {
+    @ParameterizedTest
+    @MethodSource("invalidLocationCases")
+    void validate_invalidLocation_throwsIllegalArgument(String location, String expectedMessage) {
         StreetLightSensorRequest request = StreetLightSensorRequest.builder()
-                .location(null)
+                .location(location)
                 .timestamp(PAST_TIMESTAMP)
                 .brightnessLevel(50)
                 .powerConsumption(100.0f)
@@ -34,41 +39,15 @@ class StreetLightValidatorTest {
                 IllegalArgumentException.class,
                 () -> validator.validate(request));
 
-        assertEquals("location is required", ex.getMessage());
+        assertEquals(expectedMessage, ex.getMessage());
     }
 
-    @Test
-    void validate_blankLocation_throwsIllegalArgument() {
-        StreetLightSensorRequest request = StreetLightSensorRequest.builder()
-                .location("   ")
-                .timestamp(PAST_TIMESTAMP)
-                .brightnessLevel(50)
-                .powerConsumption(100.0f)
-                .status(LightStatus.ON)
-                .build();
-
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> validator.validate(request));
-
-        assertEquals("location is required", ex.getMessage());
-    }
-
-    @Test
-    void validate_invalidLocation_throwsIllegalArgument() {
-        StreetLightSensorRequest request = StreetLightSensorRequest.builder()
-                .location("MARS")
-                .timestamp(PAST_TIMESTAMP)
-                .brightnessLevel(50)
-                .powerConsumption(100.0f)
-                .status(LightStatus.ON)
-                .build();
-
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> validator.validate(request));
-
-        assertEquals("invalid location for this sensor type", ex.getMessage());
+    private static Stream<Arguments> invalidLocationCases() {
+        return Stream.of(
+                Arguments.of(null, "location is required"),
+                Arguments.of("   ", "location is required"),
+                Arguments.of("MARS", "invalid location for this sensor type")
+        );
     }
 
     @Test

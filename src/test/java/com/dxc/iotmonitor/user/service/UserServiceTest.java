@@ -28,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -306,7 +307,7 @@ void updateProfilePictureStorageValidationFailureDoesNotSave() throws IOExceptio
         user.setProfilePicture(cdnUrl);
 
         when(userRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.of(user));
-        org.mockito.Mockito.doThrow(new IllegalStateException("Failed to delete profile picture from R2"))
+        doThrow(new IllegalStateException("Failed to delete profile picture from R2"))
                 .when(profilePictureStorageService)
                 .deleteByPublicUrl(cdnUrl);
 

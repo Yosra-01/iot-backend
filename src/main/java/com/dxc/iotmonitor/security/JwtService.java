@@ -1,9 +1,9 @@
 package com.dxc.iotmonitor.security;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class JwtService {
 
