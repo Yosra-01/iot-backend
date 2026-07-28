@@ -143,10 +143,11 @@ class SettingsServiceTest {
     })
     void upsert_throws_whenInvalidMetricForType(SensorType type, Metric metric) {
         SettingsRequest request = request(type, metric, AlertType.ABOVE, 1f);
+        List<SettingsRequest> requests = List.of(request);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> settingsService.upsert(List.of(request), user));
+                () -> settingsService.upsert(requests, user));
 
         assertEquals("invalid metric for this sensor type", ex.getMessage());
         verify(settingsRepository, never()).save(any());
@@ -156,10 +157,11 @@ class SettingsServiceTest {
     @MethodSource("outOfRangeThresholds")
     void upsert_throws_whenThresholdOutOfRange(SensorType type, Metric metric, float threshold) {
         SettingsRequest request = request(type, metric, AlertType.ABOVE, threshold);
+        List<SettingsRequest> requests = List.of(request);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> settingsService.upsert(List.of(request), user));
+                () -> settingsService.upsert(requests, user));
 
         assertEquals("thresholdValue out of valid range for this metric", ex.getMessage());
         verify(settingsRepository, never()).save(any());
@@ -168,10 +170,11 @@ class SettingsServiceTest {
     @Test
     void upsert_throws_whenThresholdValueIsNull() {
         SettingsRequest request = request(SensorType.TRAFFIC, Metric.TRAFFIC_DENSITY, AlertType.ABOVE, null);
+        List<SettingsRequest> requests = List.of(request);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> settingsService.upsert(List.of(request), user));
+                () -> settingsService.upsert(requests, user));
 
         assertEquals("thresholdValue out of valid range for this metric", ex.getMessage());
         verify(settingsRepository, never()).save(any());
@@ -183,10 +186,11 @@ class SettingsServiceTest {
     void upsert_throws_whenIncomingAboveAndBelowContradict() {
         SettingsRequest above = request(SensorType.TRAFFIC, Metric.TRAFFIC_DENSITY, AlertType.ABOVE, 100f);
         SettingsRequest below = request(SensorType.TRAFFIC, Metric.TRAFFIC_DENSITY, AlertType.BELOW, 200f);
+        List<SettingsRequest> requests = List.of(above, below);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> settingsService.upsert(List.of(above, below), user));
+                () -> settingsService.upsert(requests, user));
 
         assertTrue(ex.getMessage().contains("Contradictory thresholds"));
         assertTrue(ex.getMessage().contains(Metric.TRAFFIC_DENSITY.name()));
@@ -197,10 +201,11 @@ class SettingsServiceTest {
     void upsert_throws_whenIncomingBelowEqualsAbove() {
         SettingsRequest above = request(SensorType.TRAFFIC, Metric.AVG_SPEED, AlertType.ABOVE, 50f);
         SettingsRequest below = request(SensorType.TRAFFIC, Metric.AVG_SPEED, AlertType.BELOW, 50f);
+        List<SettingsRequest> requests = List.of(above, below);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> settingsService.upsert(List.of(above, below), user));
+                () -> settingsService.upsert(requests, user));
 
         assertTrue(ex.getMessage().contains("Contradictory thresholds"));
         verify(settingsRepository, never()).save(any());
@@ -213,10 +218,11 @@ class SettingsServiceTest {
         when(settingsRepository.findByUserAndTypeAndMetricAndAlertType(
                 user, SensorType.TRAFFIC, Metric.TRAFFIC_DENSITY, AlertType.BELOW))
                 .thenReturn(Optional.of(dbBelow));
+        List<SettingsRequest> requests = List.of(above);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> settingsService.upsert(List.of(above), user));
+                () -> settingsService.upsert(requests, user));
 
         assertTrue(ex.getMessage().contains("Contradictory thresholds"));
         verify(settingsRepository, never()).save(any());
@@ -229,10 +235,11 @@ class SettingsServiceTest {
         when(settingsRepository.findByUserAndTypeAndMetricAndAlertType(
                 user, SensorType.TRAFFIC, Metric.TRAFFIC_DENSITY, AlertType.ABOVE))
                 .thenReturn(Optional.of(dbAbove));
+        List<SettingsRequest> requests = List.of(below);
 
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
-                () -> settingsService.upsert(List.of(below), user));
+                () -> settingsService.upsert(requests, user));
 
         assertTrue(ex.getMessage().contains("Contradictory thresholds"));
         verify(settingsRepository, never()).save(any());
@@ -324,10 +331,11 @@ class SettingsServiceTest {
     void deleteById_throws_whenNotFound() {
         UUID id = UUID.randomUUID();
         when(settingsRepository.findById(id)).thenReturn(Optional.empty());
+        String idString = id.toString();
 
         ResourceNotFoundException ex = assertThrows(
                 ResourceNotFoundException.class,
-                () -> settingsService.deleteById(id.toString(), user));
+                () -> settingsService.deleteById(idString, user));
 
         assertEquals("Setting not found.", ex.getMessage());
         verify(settingsRepository, never()).deleteById(any());
@@ -346,10 +354,11 @@ class SettingsServiceTest {
         Settings setting = settingsEntity(id, SensorType.TRAFFIC, Metric.TRAFFIC_DENSITY, AlertType.ABOVE, 100f);
         setting.setUser(otherUser);
         when(settingsRepository.findById(id)).thenReturn(Optional.of(setting));
+        String idString = id.toString();
 
         AccessDeniedException ex = assertThrows(
                 AccessDeniedException.class,
-                () -> settingsService.deleteById(id.toString(), user));
+                () -> settingsService.deleteById(idString, user));
 
         assertEquals("You do not have permission to delete this setting.", ex.getMessage());
         verify(settingsRepository, never()).deleteById(any());
